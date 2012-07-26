@@ -1,0 +1,32 @@
+/*message SystemEvent
+	protected static class Thread implements Serializable {
+		private static final long serialVersionUID = 1L;
+
+		protected String name;
+		protected long id;
+		protected StackTraceElement[] stackTrace;
+
+		protected Thread(final ThreadInfo threadInfo) {
+			name = threadInfo.getThreadName();
+			id = threadInfo.getThreadId();
+			stackTrace = threadInfo.getStackTrace();
+		}
+
+		@Override
+		public String toString() {
+			return ToStringBuilder.reflectionToString(this, TO_STRING_STYLE);
+		}
+	}
+
+	private SystemEventLog() {
+		super();
+	}
+
+	protected float cpuUsage;
+	protected long heapMemoryUsed;
+	protected long nonHeapMemoryUsed;
+	protected Thread[] blockedOrRunningThreads;
+	protected int threadCount;
+	protected int peakThreadCount;
+
+	*/

@@ -1,0 +1,86 @@
+package com.iorga.webappwatcher;
+
+import java.lang.Thread.State;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.RuntimeMXBean;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.util.LinkedList;
+import java.util.List;
+
+import com.iorga.webappwatcher.eventlog.SystemEventLog;
+import com.sun.management.OperatingSystemMXBean;
+
+public class SystemEventLogger {
+	private final long cpuComputationDeltaMillis = 500;	//TODO mettre en paramètre
+
+	private long prevUptime = 0L;
+	private long prevProcessCpuTime = 0L;
+
+	private boolean runLogLoop = false;
+
+	private final Runnable loop = new Runnable() {
+		@Override
+		public void run() {
+			while (runLogLoop) {
+				try {
+					final EventLogManager eventLogManager = EventLogManager.getInstance();
+					// Code inspiré de http://knight76.blogspot.fr/2009/05/how-to-get-java-cpu-usage-jvm-instance.html et http://www.docjar.com/html/api/sun/tools/jconsole/SummaryTab$Result.java.html
+					final SystemEventLog systemEventLog = eventLogManager.addEventLog(SystemEventLog.class);
+					final OperatingSystemMXBean osMXBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+					final long processCpuTime = osMXBean.getProcessCpuTime();
+					final RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+					final long uptime = runtimeMXBean.getUptime();
+					final int availableProcessors = osMXBean.getAvailableProcessors();
+					final MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
+					systemEventLog.setHeapMemoryUsed(memoryMXBean.getHeapMemoryUsage().getUsed());
+					systemEventLog.setNonHeapMemoryUsed(memoryMXBean.getNonHeapMemoryUsage().getUsed());
+					final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+					systemEventLog.setThreadCount(threadMXBean.getThreadCount());
+					systemEventLog.setPeakThreadCount(threadMXBean.getPeakThreadCount());
+
+					// Compute the cpuUsage
+					if (prevUptime > 0L && uptime > prevUptime) {
+						// elapsedCpu is in ns and elapsedTime is in ms.
+						final long elapsedCpu = processCpuTime - prevProcessCpuTime;
+						final long elapsedTime = uptime - prevUptime;
+						// cpuUsage could go higher than 100% because elapsedTime
+						// and elapsedCpu are not fetched simultaneously. Limit to
+						// 99% to avoid Plotter showing a scale from 0% to 200%.
+						systemEventLog.setCpuUsage(Math.min(100F, elapsedCpu / (elapsedTime * 10000F * availableProcessors))); // elapsedCpu / (elapsedTime * 1000F * 1000F * availableProcessors)) * 100 => pour l'avoir en %
+					}
+
+					// We now log all threads in RUNNABLE or BLOCKED state
+					final ThreadInfo[] allThreads = threadMXBean.dumpAllThreads(false, false);
+					final List<SystemEventLog.Thread> loggedThreads = new LinkedList<SystemEventLog.Thread>();
+					for (final ThreadInfo threadInfo : allThreads) {
+						final State threadState = threadInfo.getThreadState();
+						if (threadState == State.BLOCKED || threadState == State.RUNNABLE) {
+							loggedThreads.add(new SystemEventLog.Thread(threadInfo));
+						}
+					}
+					systemEventLog.setBlockedOrRunningThreads(loggedThreads.toArray(new SystemEventLog.Thread[loggedThreads.size()]));
+
+					eventLogManager.fire(systemEventLog);
+					SystemEventLogger.this.prevUptime = uptime;
+					SystemEventLogger.this.prevProcessCpuTime = processCpuTime;
+					Thread.sleep(cpuComputationDeltaMillis);
+				} catch (final InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+	};
+
+	public synchronized void start() {
+		if (!runLogLoop) {
+			runLogLoop = true;
+			new Thread(loop).start();
+		}
+	}
+
+	public void stop() {
+		runLogLoop = false;
+	}
+}
