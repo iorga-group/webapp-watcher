@@ -1,0 +1,11 @@
+Pour surveiller une application web :
+ 1) Mettre webwatcher.jar dans le WEB-INF/lib/
+ 2) Rajouter cette configuration dans le WEB-INF/web.xml :
+	<filter>
+		<filter-name>Log Filter</filter-name>
+		<filter-class>com.iorga.webappwatcher.RequestLogFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>Log Filter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
