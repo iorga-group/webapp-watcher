@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>webappwatcher-web</artifactId>
+	<version>0.1.0-SNAPSHOT</version>
+	<name>Iorga Webapp Watcher - Web UI</name>
+	<packaging>war</packaging>
+	<parent>
+		<groupId>com.iorga</groupId>
+		<artifactId>webappwatcher-parent</artifactId>
+		<version>0.1.0-SNAPSHOT</version>
+		<relativePath>../webappwatcher-parent/pom.xml</relativePath>
+	</parent>
+
+	<dependencies>
+		<!-- Runtime -->
+		<dependency>
+			<groupId>com.iorga</groupId>
+			<artifactId>webappwatcher</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.primefaces</groupId>
+			<artifactId>primefaces</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<configuration>
+					<buildcommands>
+						<buildcommand>org.eclipse.jdt.core.javabuilder</buildcommand>
+						<buildcommand>org.eclipse.wst.common.project.facet.core.builder</buildcommand>
+						<buildcommand>org.jboss.tools.cdi.core.cdibuilder</buildcommand>
+						<buildcommand>org.jboss.tools.jst.web.kb.kbbuilder</buildcommand>
+						<buildcommand>org.eclipse.wst.validation.validationbuilder</buildcommand>
+					</buildcommands>
+					<!-- <additionalConfig> <file> <name>.settings/org.maven.ide.eclipse.prefs</name> 
+						<content> <![CDATA[eclipse.preferences.version=1 fullBuildGoals=process-test-resources 
+						includeModules=false resolveWorkspaceProjects=true resourceFilterGoals=process-resources 
+						resources\:testResources skipCompilerPlugin=true version=1]]> </content> 
+						</file> </additionalConfig> -->
+					<additionalProjectFacets>
+						<jst.jsf>2.0</jst.jsf>
+					</additionalProjectFacets>
+					<additionalProjectnatures>
+						<projectnature>org.jboss.tools.cdi.core.cdinature</projectnature>
+						<projectnature>org.jboss.tools.jsf.jsfnature</projectnature>
+						<projectnature>org.jboss.tools.jst.web.kb.kbnature</projectnature>
+					</additionalProjectnatures>
+					<packaging>war</packaging>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

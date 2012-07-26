@@ -13,10 +13,8 @@
 		<java.version>1.6</java.version>
 
 		<!-- artifact versions -->
-
-		<!-- Seam Blank properties -->
-
-		<!-- Import -->
+		<version.commons-lang>2.4</version.commons-lang>
+		<version.primefaces>3.3.1</version.primefaces>
 	</properties>
 
 	<modules>
@@ -76,6 +74,12 @@ encoding/<project>=UTF-8]]>
 				<updatePolicy>never</updatePolicy>
 			</snapshots>
 		</repository>
+		<repository>
+			<id>prime-repo</id>
+			<name>PrimeFaces Maven Repository</name>
+			<url>http://repository.primefaces.org</url>
+			<layout>default</layout>
+		</repository>
 	</repositories>
 	<pluginRepositories>
 		<pluginRepository>
@@ -107,12 +111,26 @@ encoding/<project>=UTF-8]]>
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- Linked projects -->
+			<dependency>
+				<groupId>com.iorga</groupId>
+				<artifactId>webappwatcher</artifactId>
+				<version>${project.version}</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
 			<!-- Compile -->
 			<dependency>
 				<groupId>commons-lang</groupId>
 				<artifactId>commons-lang</artifactId>
-				<version>2.4</version>
+				<version>${version.commons-lang}</version>
 			</dependency>
+			<dependency>
+				<groupId>org.primefaces</groupId>
+				<artifactId>primefaces</artifactId>
+				<version>${version.primefaces}</version>
+			</dependency>
+
 			<!-- Provided -->
 			<dependency>
 				<groupId>javax.servlet</groupId>
