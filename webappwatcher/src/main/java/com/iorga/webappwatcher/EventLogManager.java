@@ -22,20 +22,20 @@ public class EventLogManager {
 
 	private static EventLogManager instance;
 
-	private final List<EventLogListener<?>> eventLogListeners;
+	private final List<EventLogListener<?>> eventLogListeners = new ArrayList<EventLogListener<?>>();
 	/**
 	 * Firsts are older than lasts
 	 */
-	private final Deque<EventLog> eventLogsQueue;
+	private final Deque<EventLog> eventLogsQueue = new LinkedList<EventLog>();
 	private final Object eventLogsQueueLock = new Object();
 	/**
 	 * Firsts are older than lasts
 	 */
-	private final Deque<EventLog> eventLogsQueueToWrite;
+	private final Deque<EventLog> eventLogsQueueToWrite = new LinkedList<EventLog>();
 	private final Object eventLogsQueueToWriteLock = new Object();
 
-	private final long eventLogRetentionMillis;
-	private final String logPath;
+	private long eventLogRetentionMillis = 5 * 60 * 1000;	// 5mn log by default
+	private String logPath = "webappwatcherlog";
 
 	private ObjectOutputStream objectOutputStreamLog;
 	private final Object objectOutputStreamLogLock = new Object();
@@ -44,11 +44,6 @@ public class EventLogManager {
 	private final long waitForEventLogToCompleteMillis = 2000;
 
 	private EventLogManager() {
-		eventLogListeners = new ArrayList<EventLogListener<?>>();
-		eventLogsQueue = new LinkedList<EventLog>();
-		eventLogsQueueToWrite = new LinkedList<EventLog>();
-		eventLogRetentionMillis = 5 * 60 * 1000;	// 5mn log
-		logPath = "webappwatcherlog";
 	}
 
 	public static EventLogManager getInstance() {
@@ -188,4 +183,22 @@ public class EventLogManager {
 			}
 		}
 	}
+
+
+	public long getEventLogRetentionMillis() {
+		return eventLogRetentionMillis;
+	}
+
+	public void setEventLogRetentionMillis(final long eventLogRetentionMillis) {
+		this.eventLogRetentionMillis = eventLogRetentionMillis;
+	}
+
+	public String getLogPath() {
+		return logPath;
+	}
+
+	public void setLogPath(final String logPath) {
+		this.logPath = logPath;
+	}
+
 }

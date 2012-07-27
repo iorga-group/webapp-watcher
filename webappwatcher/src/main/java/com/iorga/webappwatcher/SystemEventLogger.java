@@ -13,7 +13,7 @@ import com.iorga.webappwatcher.eventlog.SystemEventLog;
 import com.sun.management.OperatingSystemMXBean;
 
 public class SystemEventLogger {
-	private final long cpuComputationDeltaMillis = 500;	//TODO mettre en paramètre
+	private long cpuComputationDeltaMillis = 500;
 
 	private long prevUptime = 0L;
 	private long prevProcessCpuTime = 0L;
@@ -83,4 +83,14 @@ public class SystemEventLogger {
 	public void stop() {
 		runLogLoop = false;
 	}
+
+
+	public long getCpuComputationDeltaMillis() {
+		return cpuComputationDeltaMillis;
+	}
+
+	public void setCpuComputationDeltaMillis(final long cpuComputationDeltaMillis) {
+		this.cpuComputationDeltaMillis = cpuComputationDeltaMillis;
+	}
+
 }

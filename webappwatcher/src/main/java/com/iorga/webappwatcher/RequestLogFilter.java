@@ -17,6 +17,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -39,6 +40,24 @@ import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
  *
  */
 public class RequestLogFilter implements Filter {
+
+	// initParameter for RequestLogFilter
+	private static final String EXCLUDES_INIT_PARAM = "excludes";
+	private static final String INCLUDES_INIT_PARAM = "includes";
+	private static final String CMD_REQUEST_NAME_INIT_PARAM = "cmdRequestName";
+	private static final String DEFAULT_CMD_REQUEST_NAME = "RequestLogFilterCmd";
+	// initParameter for CpuCriticalUsageWatcher
+	private static final String CRITICAL_CPU_USAGE_INIT_PARAM = "criticalCpuUsage";
+	private static final String DEAD_LOCK_THREADS_SEARCH_DELTA_MILLIS_INIT_PARAM = "deadLockThreadsSearchDeltaMillis";
+	// initParameter for SystemEventLogger
+	private static final String CPU_COMPUTATION_DELTA_MILLIS_INIT_PARAM = "cpuComputationDeltaMillis";
+	// initParameter for EventLogManager
+	private static final String LOG_PATH_INIT_PARAM = "logPath";
+	private static final String EVENT_LOG_RETENTION_MILLIS_INIT_PARAM = "eventLogRetentionMillis";
+	// Commands available
+	private static final String CMD_STOP_ALL = "stopAll";
+	private static final String CMD_START_ALL = "startAll";
+
 	private static final Logger log = LoggerFactory.getLogger(RequestLogFilter.class);
 
 	private List<Pattern> includes;
@@ -51,10 +70,12 @@ public class RequestLogFilter implements Filter {
 
 	private SystemEventLogger systemEventLogger;
 	private int nbExcludedRequests = 0;
+	private String cmdRequestName = DEFAULT_CMD_REQUEST_NAME;
 
 	@Override
 	public void init(final FilterConfig filterConfig) throws ServletException {
-		final String includesParam = filterConfig.getInitParameter("includes");
+		// Configure requestLogFilter
+		final String includesParam = filterConfig.getInitParameter(INCLUDES_INIT_PARAM);
 		if (includesParam != null) {
 			this.includes = new ArrayList<Pattern>();
 			final String[] includes = includesParam.split(",");
@@ -64,7 +85,7 @@ public class RequestLogFilter implements Filter {
 				}
 			}
 		}
-		final String excludesParam = filterConfig.getInitParameter("excludes");
+		final String excludesParam = filterConfig.getInitParameter(EXCLUDES_INIT_PARAM);
 		if (excludesParam != null) {
 			this.excludes = new ArrayList<Pattern>();
 			final String[] excludes = excludesParam.split(",");
@@ -74,9 +95,45 @@ public class RequestLogFilter implements Filter {
 				}
 			}
 		}
-		// Initializing system event logger
-		EventLogManager.getInstance().addEventLogListener(new CpuCriticalUsageWatcher());
+		final String cmdRequestName = filterConfig.getInitParameter(CMD_REQUEST_NAME_INIT_PARAM);
+		if (StringUtils.isNotBlank(cmdRequestName)) {
+			this.cmdRequestName = cmdRequestName;
+		}
+		/// Initializing system event logger
+		final CpuCriticalUsageWatcher cpuCriticalUsageWatcher = new CpuCriticalUsageWatcher();
+		// Configure cpuCriticalUsageWatcher
+		final String criticalCpuUsage = filterConfig.getInitParameter(CRITICAL_CPU_USAGE_INIT_PARAM);
+		if (StringUtils.isNotBlank(criticalCpuUsage)) {
+			cpuCriticalUsageWatcher.setCriticalCpuUsage(Float.parseFloat(criticalCpuUsage));
+		}
+		final String deadLockThreadsSearchDeltaMillis = filterConfig.getInitParameter(DEAD_LOCK_THREADS_SEARCH_DELTA_MILLIS_INIT_PARAM);
+		if (StringUtils.isNotBlank(deadLockThreadsSearchDeltaMillis)) {
+			cpuCriticalUsageWatcher.setDeadLockThreadsSearchDeltaMillis(Long.parseLong(deadLockThreadsSearchDeltaMillis));
+		}
+
+		final EventLogManager eventLogManager = EventLogManager.getInstance();
+		// Configure the eventLogManager
+		final String eventLogRetentionMillis = filterConfig.getInitParameter(EVENT_LOG_RETENTION_MILLIS_INIT_PARAM);
+		if (StringUtils.isNotBlank(eventLogRetentionMillis)) {
+			eventLogManager.setEventLogRetentionMillis(Long.parseLong(eventLogRetentionMillis));
+		}
+		final String logPath = filterConfig.getInitParameter(LOG_PATH_INIT_PARAM);
+		if (StringUtils.isNotBlank(logPath)) {
+			eventLogManager.setLogPath(logPath);
+		}
+		eventLogManager.addEventLogListener(cpuCriticalUsageWatcher);
+
 		systemEventLogger = new SystemEventLogger();
+		// Configure systemEventLogger
+		final String cpuComputationDeltaMillis = filterConfig.getInitParameter(CPU_COMPUTATION_DELTA_MILLIS_INIT_PARAM);
+		if (StringUtils.isNotBlank(cpuComputationDeltaMillis)) {
+			systemEventLogger.setCpuComputationDeltaMillis(Long.parseLong(cpuComputationDeltaMillis));
+		}
+
+		startServices();
+	}
+
+	private void startServices() {
 		systemEventLogger.start();
 	}
 
@@ -85,57 +142,73 @@ public class RequestLogFilter implements Filter {
 	public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain) throws IOException, ServletException {
 		final HttpServletRequest httpRequest = (HttpServletRequest)request;
 		final String requestURI = httpRequest.getRequestURI();
-		// Test des filtres d'inclusion / exclusion
-		boolean matches = false;
-		if (includes != null) {
-			for (final Iterator<Pattern> iterator = includes.iterator(); iterator.hasNext() && !matches;) {
-				final Pattern include = iterator.next();
-				matches |= include.matcher(requestURI).matches();
+		if (requestURI.endsWith(cmdRequestName)) {
+			// This is a Command Request, let's execute it
+			final HttpServletResponse httpResponse = ((HttpServletResponse)response);
+			if (httpRequest.getParameter(CMD_START_ALL) != null) {
+				startServices();
+			} else if (httpRequest.getParameter(CMD_STOP_ALL) != null) {
+				stopServices();
+			} else {
+				httpResponse.setStatus(400);
+				httpResponse.getWriter().write("ERROR : Command not understood");
+				return;
 			}
-		}
-		if (excludes != null) {
-			for (final Iterator<Pattern> iterator = excludes.iterator(); iterator.hasNext() && matches;) {
-				final Pattern exclude = iterator.next();
-				matches &= !exclude.matcher(requestURI).matches();
-			}
-		}
-		final RequestEventLog logRequest;
-		if (matches) {
-			logNbExcludedRequests();
-			logRequest = EventLogManager.getInstance().addEventLog(RequestEventLog.class);
-			logRequest.setRequestURI(requestURI);
-			logRequest.setMethod(httpRequest.getMethod());
-			final Enumeration<String> parameterNames = httpRequest.getParameterNames();
-			final List<Parameter> parameters = new LinkedList<Parameter>();
-			while (parameterNames.hasMoreElements()) {
-				final String parameterName = parameterNames.nextElement();
-				parameters.add(new Parameter(parameterName, httpRequest.getParameterValues(parameterName)));
-			}
-			logRequest.setParameters(parameters.toArray(new Parameter[parameters.size()]));
-			final Enumeration<String> headerNames = httpRequest.getHeaderNames();
-			final List<Header> headers = new LinkedList<Header>();
-			while (headerNames.hasMoreElements()) {
-				final String headerName = headerNames.nextElement();
-				headers.add(new Header(headerName, httpRequest.getHeader(headerName)));
-			}
-			logRequest.setHeaders(headers.toArray(new Header[headers.size()]));
-			final Principal userPrincipal = httpRequest.getUserPrincipal();
-			if (userPrincipal != null) {
-				logRequest.setPrincipal(userPrincipal.getName());
-			}
-			final Thread currentThread = Thread.currentThread();
-			logRequest.setThreadName(currentThread.getName());
-			logRequest.setThreadId(currentThread.getId());
+			httpResponse.setStatus(200);
+			httpResponse.getWriter().write("OK : Command successfully completed");
 		} else {
-			logRequest = null;
-			incrementNbExcludedRequests();
-		}
+			// Test des filtres d'inclusion / exclusion
+			boolean matches = false;
+			if (includes != null) {
+				for (final Iterator<Pattern> iterator = includes.iterator(); iterator.hasNext() && !matches;) {
+					final Pattern include = iterator.next();
+					matches |= include.matcher(requestURI).matches();
+				}
+			}
+			if (excludes != null) {
+				for (final Iterator<Pattern> iterator = excludes.iterator(); iterator.hasNext() && matches;) {
+					final Pattern exclude = iterator.next();
+					matches &= !exclude.matcher(requestURI).matches();
+				}
+			}
+			final RequestEventLog logRequest;
+			if (matches) {
+				logNbExcludedRequests();
+				logRequest = EventLogManager.getInstance().addEventLog(RequestEventLog.class);
+				logRequest.setRequestURI(requestURI);
+				logRequest.setMethod(httpRequest.getMethod());
+				final Enumeration<String> parameterNames = httpRequest.getParameterNames();
+				final List<Parameter> parameters = new LinkedList<Parameter>();
+				while (parameterNames.hasMoreElements()) {
+					final String parameterName = parameterNames.nextElement();
+					parameters.add(new Parameter(parameterName, httpRequest.getParameterValues(parameterName)));
+				}
+				logRequest.setParameters(parameters.toArray(new Parameter[parameters.size()]));
+				final Enumeration<String> headerNames = httpRequest.getHeaderNames();
+				final List<Header> headers = new LinkedList<Header>();
+				while (headerNames.hasMoreElements()) {
+					final String headerName = headerNames.nextElement();
+					headers.add(new Header(headerName, httpRequest.getHeader(headerName)));
+				}
+				logRequest.setHeaders(headers.toArray(new Header[headers.size()]));
+				final Principal userPrincipal = httpRequest.getUserPrincipal();
+				if (userPrincipal != null) {
+					logRequest.setPrincipal(userPrincipal.getName());
+				}
+				final Thread currentThread = Thread.currentThread();
+				logRequest.setThreadName(currentThread.getName());
+				logRequest.setThreadId(currentThread.getId());
+			} else {
+				logRequest = null;
+				incrementNbExcludedRequests();
+			}
 
-		chain.doFilter(request, response);
+			chain.doFilter(request, response);
 
-		if (matches) {
-			logRequest.setAfterProcessedDate(new Date());
-			EventLogManager.getInstance().fire(logRequest);
+			if (matches) {
+				logRequest.setAfterProcessedDate(new Date());
+				EventLogManager.getInstance().fire(logRequest);
+			}
 		}
 	}
 
@@ -155,6 +228,10 @@ public class RequestLogFilter implements Filter {
 
 	@Override
 	public void destroy() {
+		stopServices();
+	}
+
+	private void stopServices() {
 		systemEventLogger.stop();
 		try {
 			EventLogManager.getInstance().closeLog();

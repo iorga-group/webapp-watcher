@@ -16,8 +16,8 @@ import com.iorga.webappwatcher.eventlog.SystemEventLog;
 public class CpuCriticalUsageWatcher implements EventLogListener<SystemEventLog> {
 	private static final Logger log = LoggerFactory.getLogger(CpuCriticalUsageWatcher.class);
 
-	private final float criticalCpuUsage = 1F;	//TODO mettre en paramètre
-	private final long deadLockThreadsSearchDeltaMillis = 5 * 60 * 1000; // Default every 5mn	//TODO mettre en paramètre
+	private float criticalCpuUsage = Math.min(70f, 100f / ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors());	// Default to over one processor
+	private long deadLockThreadsSearchDeltaMillis = 5 * 60 * 1000; // Default every 5mn
 	private Date lastDeadLockThreadsSearch = new Date(0);
 
 	@Override
@@ -54,6 +54,22 @@ public class CpuCriticalUsageWatcher implements EventLogListener<SystemEventLog>
 				log.warn("Couldn't write retention log", e);
 			}
 		}
+	}
+
+	public float getCriticalCpuUsage() {
+		return criticalCpuUsage;
+	}
+
+	public void setCriticalCpuUsage(final float criticalCpuUsage) {
+		this.criticalCpuUsage = criticalCpuUsage;
+	}
+
+	public long getDeadLockThreadsSearchDeltaMillis() {
+		return deadLockThreadsSearchDeltaMillis;
+	}
+
+	public void setDeadLockThreadsSearchDeltaMillis(final long deadLockThreadsSearchDeltaMillis) {
+		this.deadLockThreadsSearchDeltaMillis = deadLockThreadsSearchDeltaMillis;
 	}
 
 }

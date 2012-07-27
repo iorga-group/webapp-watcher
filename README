@@ -9,3 +9,18 @@ Pour surveiller une application web :
 		<filter-name>Log Filter</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
+
+Avec JBoss 7, ajouter "com/sun/management" à jboss-as-7/modules/sun/jdk/main/modules.xml :
+    ...
+    <module xmlns="urn:jboss:module:1.1" name="sun.jdk">
+        <resources>
+            <!-- currently jboss modules has not way of importing services from
+            classes.jar so we duplicate them here -->
+            <resource-root path="service-loader-resources"/>
+        </resources>
+        <dependencies>
+            <system export="true">
+                <paths>
+                    <path name="com/sun/management"/>
+                    <path name="com/sun/script/javascript"/>
+    ...
