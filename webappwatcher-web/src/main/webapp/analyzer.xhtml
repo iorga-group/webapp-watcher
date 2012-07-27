@@ -11,6 +11,9 @@
 		<h:outputScript library="js" name="jquery.flot.time.js"/>
 		<h:outputScript library="js" name="jquery.flot.resize.js"/>
 		<h:outputScript library="js" name="jquery.flot.crosshair.js"/>
+		<ui:remove>
+			<h:outputScript library="js" name="jquery.flot.navigate.js"/>
+		</ui:remove>
 		<h:outputScript library="js" name="analyzer.js"/>
 		<style>
 			html {
@@ -19,44 +22,20 @@
 			body {
 				height: 100%;
 			}
-			/*
-			.ui-widget-content {
-				height: 100%;
-			}*/
 		</style>
 	</h:head>
 	
 	<h:body>
 		<p:panel header="Analyzer">
 			<h:form>
-				<ui:remove>
-					<p:lineChart value="#{analyzerAction.cpuUsageModel}" title="Global Usage" legendPosition="e" style="height:300px"
-						minY="0" maxY="100">
-						<f:convertDateTime pattern="yyyy-MM-dd HH:mm:ss,SSS"/>
-					</p:lineChart>
-				</ui:remove>
 				<div id="placeholder" style="width:100%;height:600px;"></div>
 				<script id="source">
 $(function () {
-	var cpuUsages = [
-		<ui:repeat var="systemEventLog" value="#{analyzerAction.systemEventLogs}">
-			[#{systemEventLog.date.time},#{systemEventLog.cpuUsage}]<h:outputText value="," rendered="#{systemEventLog.date != analyzerAction.lastDate}" />
-		</ui:repeat>
-	];
-	var memoryUsedList = [
-		<ui:repeat var="systemEventLog" value="#{analyzerAction.systemEventLogs}">
-			[#{systemEventLog.date.time},#{systemEventLog.heapMemoryUsed + systemEventLog.nonHeapMemoryUsed}]<h:outputText value="," rendered="#{systemEventLog.date != analyzerAction.lastDate}" />
-		</ui:repeat>
-	];
-	initAnalyzer(cpuUsages, memoryUsedList);
+	var cpuUsageValues = [#{analyzerAction.cpuUsageJsonValues}];
+	var memoryUsedValues = [#{analyzerAction.memoryUsedJsonValues}];
+	var markings = [#{analyzerAction.markingsJson}];
+	initAnalyzer(cpuUsageValues, memoryUsedValues, markings);
 });
-   
-<ui:remove>
-$(function () {
-	var d = [<c:forEach var="entry" items="#{analyzerAction.cpuUsageModel.series[0].data.entrySet()}">[#{entry.key.time},#{entry.value}]#{entry.key != analyzerAction.lastDate ? ',' : ''}</c:forEach>];
-	$.plot($("#placeholder"), [d], { xaxis: { mode: "time" } });
-});
-</ui:remove>
 				</script>
 			</h:form>
 		</p:panel>

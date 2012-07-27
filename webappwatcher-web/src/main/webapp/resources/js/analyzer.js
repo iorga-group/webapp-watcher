@@ -6,33 +6,29 @@ function cpuUsageFormatter(v, axis) {
 	return v.toFixed(axis.tickDecimals) + " %";
 }
 
-function initAnalyzer(cpuUsages, memoryUsedList) {
-	/*
-    var markings = [
-                    { color: '#f6f6f6', yaxis: { from: 1 } },
-                    { color: '#f6f6f6', yaxis: { to: -1 } },
-                    { color: 'green', lineWidth: 2, xaxis: { from: 1343292820699, to: 1343292895085 }, yaxis: { from: -1, to: -1} },
-                    { color: '#000', lineWidth: 1, xaxis: { from: 8, to: 8 } }
-                ];
-    */
+function initAnalyzer(cpuUsageValues, memoryUsedValues, markings) {
 	plot = $.plot($("#placeholder"),
-		[{ data: cpuUsages, label: "CPU = 000.00 %" },
-		 { data: memoryUsedList, label: "Memory = 0000.00 Mo", yaxis: 2 }],
+		[{ data: cpuUsageValues, label: "CPU = 000.00 %" },
+		 { data: memoryUsedValues, label: "Memory = 0000.00 Mo", yaxis: 2 }],
    		{
 			xaxes: [{ mode: "time" }],
-			yaxes: [{ min: 0, max: 100, // min: -2, max: 100,
+			yaxes: [{ min: -20, max: 100, // min: -2, max: 100,
 			          tickFormatter: cpuUsageFormatter,
-			          tickDecimals: 2},
+			          tickDecimals: 2/*,
+			          zoomRange: [-20, 100]*/},
 			        { tickFormatter: memoryFormatter,
 				      tickDecimals: 2,
 				      position: 'right',
 				      alignTicksWithAxis: 1}],
-			/*
-			yaxis: { min: 0, max: 100 },
-			*/
 			crosshair: { mode : "x" },
-			grid: { hoverable: true, autoHighlight: false/*, markings: markings*/ },
-			legend: { position: 'nw' }
+			grid: { hoverable: true, autoHighlight: false, markings: markings },
+			legend: { position: 'nw' }/*,
+	        zoom: {
+	            interactive: true
+	        },
+	        pan: {
+	            interactive: true
+	        }*/
 		}
 	);
 	// Real time update script
