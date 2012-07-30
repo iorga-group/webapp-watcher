@@ -2,6 +2,7 @@
 	xmlns:h="http://java.sun.com/jsf/html"
 	xmlns:f="http://java.sun.com/jsf/core"
 	xmlns:c="http://java.sun.com/jsp/jstl/core"
+	xmlns:fn="http://java.sun.com/jsp/jstl/functions"
 	xmlns:ui="http://java.sun.com/jsf/facelets"
 	xmlns:p="http://primefaces.org/ui">
 
@@ -22,13 +23,67 @@
 			body {
 				height: 100%;
 			}
+			.stackElement {
+				margin-left: 10px;
+			}
 		</style>
 	</h:head>
 	
 	<h:body>
 		<p:panel header="Analyzer">
-			<h:form>
+			<h:form prependId="false">
 				<div id="placeholder" style="width:100%;height:600px;"></div>
+				<p:outputPanel id="infoPanel">
+					Selected date : <h:outputText value="#{analyzerAction.selectedTime}"><f:convertDateTime dateStyle="full"/></h:outputText>
+					<p:fieldset legend="System" rendered="#{not empty analyzerAction.selectedSystemEventLog}">
+						<ul>
+							<li>CPU : <h:outputText value="#{analyzerAction.selectedSystemEventLog.cpuUsage}" /> %</li>
+							<li>Heap Memory : <h:outputText value="#{analyzerAction.selectedSystemEventLog.heapMemoryUsed / (1024 * 1024)}"><f:convertNumber maxFractionDigits="2"/></h:outputText> MB</li>
+							<li>Non Heap Memory : <h:outputText value="#{analyzerAction.selectedSystemEventLog.nonHeapMemoryUsed / (1024 * 1024)}"><f:convertNumber maxFractionDigits="2"/></h:outputText> MB</li>
+							<li>Thread count : <h:outputText value="#{analyzerAction.selectedSystemEventLog.threadCount}" /></li>
+							<li>Peak Thread count : <h:outputText value="#{analyzerAction.selectedSystemEventLog.peakThreadCount}" /></li>
+						</ul>
+						<p:fieldset legend="Running or Blocked Threads" toggleable="true" rendered="#{not empty analyzerAction.selectedSystemEventLog.blockedOrRunningThreads}">
+							<ul>
+							<ui:repeat var="thread" value="#{analyzerAction.selectedSystemEventLog.blockedOrRunningThreads}">
+								<li>#{thread.name}(##{thread.id}) - #{thread.state}</li>
+								<ul>
+								<ui:repeat var="stackElement" value="#{thread.stackTrace}">
+									<li>#{stackElement.className}.#{stackElement.methodName}(#{stackElement.fileName}:#{stackElement.lineNumber})</li>
+								</ui:repeat>
+								</ul>
+							</ui:repeat>
+							</ul>
+						</p:fieldset>
+					</p:fieldset>
+					<p:fieldset legend="Requests" rendred="#{not empty analyzerAction.selectedRequestEventLogs}">
+						<ul>
+							<ui:repeat var="requestEvent" value="#{analyzerAction.selectedRequestEventLogs}">
+								<li>#{requestEvent.requestURI} (#{requestEvent.principal})</li>
+								<ul>
+									<li>Method : #{requestEvent.method}</li>
+									<li>Thread : #{requestEvent.threadName} (#{requestEvent.threadId})</li>
+									<li>Start date : #{requestEvent.date}</li>
+									<li>End date : #{requestEvent.afterProcessedDate}</li>
+									<li>Parameters</li>
+									<ul>
+										<ui:repeat var="parameter" value="#{requestEvent.parameters}">
+											<li>#{parameter.name} = #{fn:join(parameter.values, ', ')}</li>
+										</ui:repeat>
+									</ul>
+									<li>Headers</li>
+									<ul>
+										<ui:repeat var="requestHeader" value="#{requestEvent.headers}">
+											<li>#{requestHeader.name} = #{requestHeader.value}</li>
+										</ui:repeat>
+									</ul>
+								</ul>
+							</ui:repeat>
+						</ul>
+					</p:fieldset>
+				</p:outputPanel>
+				<p:remoteCommand name="updateInfoPanel" update="infoPanel" action="#{analyzerAction.updateInfoPanel}" />
+				<h:inputHidden id="selectedTime" value="#{analyzerAction.selectedTime}" />
 				<script id="source">
 $(function () {
 	var cpuUsageValues = [#{analyzerAction.cpuUsageJsonValues}];

@@ -6,8 +6,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +31,6 @@ import com.iorga.webappwatcher.eventlog.SystemEventLog;
 public class AnalyzerAction implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-//	private List<SystemEventLog> systemEventLogs;
 //	private Map<String, List<RequestEventLog>> requestEventLogsByPrincipal;
 
 	private String cpuUsageJsonValues;
@@ -36,25 +39,36 @@ public class AnalyzerAction implements Serializable {
 
 	private String markingsJson;
 
+	private List<RequestEventLog> requestEventLogsSortedByDate;
+	private List<SystemEventLog> systemEventLogsSortedByDate;
+
+	private long selectedTime;
+	private SystemEventLog selectedSystemEventLog;
+	private List<RequestEventLog> selectedRequestEventLogs;
+
 	@PostConstruct
 	public void readEventLogs() throws IOException, ClassNotFoundException {
-		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/5.1.0.GA/bin/webappwatcherlog.3.ser");
+//		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/5.1.0.GA/bin/webappwatcherlog.3.ser");
+//		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/7.1.1.Final/bin/webappwatcherlog.ser");
+		final FileInputStream inputStream = new FileInputStream("/tmp/webappwatcherlog.ser");
+
 		final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
 		try {
 			final StringBuilder cpuUsageJsonValuesBuilder = new StringBuilder();
 			final StringBuilder memoryUsedJsonValuesBuilder = new StringBuilder();
 			final Map<String, List<RequestEventLog>> requestEventLogsByPrincipal = new HashMap<String, List<RequestEventLog>>();
+			final LinkedList<SystemEventLog> systemEventLogsSortedByDate = new LinkedList<SystemEventLog>();
 			try {
 				boolean first = true;
-//				systemEventLogs = new LinkedList<SystemEventLog>();
+				requestEventLogsSortedByDate = new LinkedList<RequestEventLog>();
 				EventLog eventLog;
 				while ((eventLog = (EventLog) objectInputStream.readObject()) != null) {
 					final Date eventLogDate = eventLog.getDate();
 					if (eventLog instanceof SystemEventLog) {
 						final SystemEventLog systemEventLog = (SystemEventLog) eventLog;
-//						systemEventLogs.add(systemEventLog);
 						addData(eventLogDate, systemEventLog.getCpuUsage(), cpuUsageJsonValuesBuilder, first);
 						addData(eventLogDate, systemEventLog.getHeapMemoryUsed()+systemEventLog.getNonHeapMemoryUsed(), memoryUsedJsonValuesBuilder, first);
+						systemEventLogsSortedByDate.add(systemEventLog);
 					}
 					if (eventLog instanceof RequestEventLog) {
 						final RequestEventLog requestEventLog = (RequestEventLog) eventLog;
@@ -62,12 +76,14 @@ public class AnalyzerAction implements Serializable {
 						if (StringUtils.isEmpty(principal)) {
 							principal = "";
 						}
-						List<RequestEventLog> requests = requestEventLogsByPrincipal.get(principal);
-						if (requests == null) {
-							requests = new LinkedList<RequestEventLog>();
-							requestEventLogsByPrincipal.put(principal, requests);
+						List<RequestEventLog> requestsForThisPrincipal = requestEventLogsByPrincipal.get(principal);
+						if (requestsForThisPrincipal == null) {
+							requestsForThisPrincipal = new LinkedList<RequestEventLog>();
+							requestEventLogsByPrincipal.put(principal, requestsForThisPrincipal);
 						}
-						requests.add(requestEventLog);
+						requestsForThisPrincipal.add(requestEventLog);
+						requestEventLogsSortedByDate.add(requestEventLog);
+						// now search
 					}
 					first = false;
 				}
@@ -99,8 +115,53 @@ public class AnalyzerAction implements Serializable {
 				currentPrincipal++;
 			}
 			this.markingsJson = markingsJsonBuilder.toString();
+			// putting the systemEventLogsSortedByDate in an array list in order to binary search on it later
+			this.systemEventLogsSortedByDate = new ArrayList<SystemEventLog>(systemEventLogsSortedByDate);
 		} finally {
 			objectInputStream.close();
+		}
+	}
+
+	public void updateInfoPanel() {
+		// Binary search on systemEventLogsSortedByDate to get the nearer systemEventLog
+		final Date selectedDate = new Date(getSelectedTime());
+		final SystemEventLog systemEventLogToFind = new SystemEventLog(selectedDate);
+		final int binaryIndex = Collections.binarySearch(systemEventLogsSortedByDate, systemEventLogToFind, new Comparator<SystemEventLog>() {
+			@Override
+			public int compare(final SystemEventLog o1, final SystemEventLog o2) {
+				return o1.getDate().compareTo(o2.getDate());
+			}
+		});
+		if (binaryIndex > 0) {
+			// binary search found the date
+			this.selectedSystemEventLog = systemEventLogsSortedByDate.get(binaryIndex);
+		} else {
+			final int insertionPoint = -binaryIndex - 1;
+			final SystemEventLog n0 = systemEventLogsSortedByDate.get(insertionPoint - 1);
+			if (insertionPoint == systemEventLogsSortedByDate.size()) {
+				// get the last entry because the insertion point is at the end
+				this.selectedSystemEventLog = n0;
+			} else  {
+				final SystemEventLog n = systemEventLogsSortedByDate.get(insertionPoint);
+				if (insertionPoint == 0) {
+					this.selectedSystemEventLog = n;
+				} else if (n0.getDate().getTime() + n.getDate().getTime() <= getSelectedTime() * 2) {
+					// the selected date is near n0 than n
+					this.selectedSystemEventLog = n0;
+				} else {
+					this.selectedSystemEventLog = n;
+				}
+			}
+		}
+		// Now search for selected request logs
+		this.selectedRequestEventLogs = new LinkedList<RequestEventLog>();
+		final Iterator<RequestEventLog> iterator = requestEventLogsSortedByDate.iterator();
+		RequestEventLog request = null;
+		while (iterator.hasNext() && (request = iterator.next()).getDate().getTime() <= getSelectedTime()) {
+			if (request.getAfterProcessedDate().getTime() >= getSelectedTime()) {
+				// End date is after the selected time, the request is selected
+				selectedRequestEventLogs.add(request);
+			}
 		}
 	}
 
@@ -110,6 +171,7 @@ public class AnalyzerAction implements Serializable {
 		}
 		stringBuilder.append("[").append(date.getTime()).append(",").append(value).append("]");
 	}
+
 
 	public String getCpuUsageJsonValues() {
 		return cpuUsageJsonValues;
@@ -122,4 +184,21 @@ public class AnalyzerAction implements Serializable {
 	public String getMarkingsJson() {
 		return markingsJson;
 	}
+
+	public long getSelectedTime() {
+		return selectedTime;
+	}
+
+	public void setSelectedTime(final long clickedTime) {
+		this.selectedTime = clickedTime;
+	}
+
+	public SystemEventLog getSelectedSystemEventLog() {
+		return selectedSystemEventLog;
+	}
+
+	public List<RequestEventLog> getSelectedRequestEventLogs() {
+		return selectedRequestEventLogs;
+	}
+
 }

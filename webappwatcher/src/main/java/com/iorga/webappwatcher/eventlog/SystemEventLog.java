@@ -1,7 +1,9 @@
 package com.iorga.webappwatcher.eventlog;
 
 import java.io.Serializable;
+import java.lang.Thread.State;
 import java.lang.management.ThreadInfo;
+import java.util.Date;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 
@@ -15,11 +17,13 @@ public class SystemEventLog extends EventLog {
 		private final String name;
 		private final long id;
 		private final StackTraceElement[] stackTrace;
+		private final State state;
 
 		public Thread(final ThreadInfo threadInfo) {
 			name = threadInfo.getThreadName();
 			id = threadInfo.getThreadId();
 			stackTrace = threadInfo.getStackTrace();
+			state = threadInfo.getThreadState();
 		}
 
 		@Override
@@ -38,10 +42,18 @@ public class SystemEventLog extends EventLog {
 		public StackTraceElement[] getStackTrace() {
 			return stackTrace;
 		}
+
+		public State getState() {
+			return state;
+		}
 	}
 
 	protected SystemEventLog() {
 		super();
+	}
+
+	public SystemEventLog(final Date date) {
+		super(date);
 	}
 
 	private float cpuUsage;

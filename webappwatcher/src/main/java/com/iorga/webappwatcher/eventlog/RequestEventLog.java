@@ -66,6 +66,7 @@ public class RequestEventLog extends EventLog {
 	private Header[] headers;
 	private long threadId;
 	private Date afterProcessedDate;
+	private Throwable throwable;
 
 	protected RequestEventLog() {
 		super();
@@ -133,5 +134,13 @@ public class RequestEventLog extends EventLog {
 
 	public void setAfterProcessedDate(final Date afterProcessedDate) {
 		this.afterProcessedDate = afterProcessedDate;
+	}
+
+	public Throwable getThrowable() {
+		return throwable;
+	}
+
+	public void setThrowable(final Throwable throwable) {
+		this.throwable = throwable;
 	}
 }

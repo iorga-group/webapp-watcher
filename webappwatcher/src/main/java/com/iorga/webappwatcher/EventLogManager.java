@@ -41,7 +41,7 @@ public class EventLogManager {
 	private final Object objectOutputStreamLogLock = new Object();
 
 	private static final long SLEEP_BETWEEN_TEST_FOR_EVENT_LOG_TO_COMPLETE_MILLIS = 300;
-	private final long waitForEventLogToCompleteMillis = 2000;
+	private long waitForEventLogToCompleteMillis = 5 * 60 * 1000;	// 5mn by default
 
 	private EventLogManager() {
 	}
@@ -124,7 +124,10 @@ public class EventLogManager {
 								log.debug(eventLog.toString());
 							}
 							objectOutputStream.writeObject(eventLog);
-						} // else, ignore it = it will never be written anywhere
+						} else {
+							// ignore it = it will never be written anywhere
+							log.info("Ignoring event "+eventLog);
+						}
 					}
 				}
 				objectOutputStream.flush();
@@ -199,6 +202,14 @@ public class EventLogManager {
 
 	public void setLogPath(final String logPath) {
 		this.logPath = logPath;
+	}
+
+	public long getWaitForEventLogToCompleteMillis() {
+		return waitForEventLogToCompleteMillis;
+	}
+
+	public void setWaitForEventLogToCompleteMillis(final long waitForEventLogToCompleteMillis) {
+		this.waitForEventLogToCompleteMillis = waitForEventLogToCompleteMillis;
 	}
 
 }

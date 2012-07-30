@@ -41,6 +41,7 @@ import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
  */
 public class RequestLogFilter implements Filter {
 
+	private static final String WAIT_FOR_EVENT_LOG_TO_COMPLETE_MILLIS_INIT_PARAM = "waitForEventLogToCompleteMillis";
 	// initParameter for RequestLogFilter
 	private static final String EXCLUDES_INIT_PARAM = "excludes";
 	private static final String INCLUDES_INIT_PARAM = "includes";
@@ -120,6 +121,10 @@ public class RequestLogFilter implements Filter {
 		final String logPath = filterConfig.getInitParameter(LOG_PATH_INIT_PARAM);
 		if (StringUtils.isNotBlank(logPath)) {
 			eventLogManager.setLogPath(logPath);
+		}
+		final String waitForEventLogToCompleteMillis = filterConfig.getInitParameter(WAIT_FOR_EVENT_LOG_TO_COMPLETE_MILLIS_INIT_PARAM);
+		if (StringUtils.isNotBlank(waitForEventLogToCompleteMillis)) {
+			eventLogManager.setWaitForEventLogToCompleteMillis(Long.parseLong(waitForEventLogToCompleteMillis));
 		}
 		eventLogManager.addEventLogListener(cpuCriticalUsageWatcher);
 
@@ -203,11 +208,24 @@ public class RequestLogFilter implements Filter {
 				incrementNbExcludedRequests();
 			}
 
-			chain.doFilter(request, response);
-
-			if (matches) {
-				logRequest.setAfterProcessedDate(new Date());
-				EventLogManager.getInstance().fire(logRequest);
+			try {
+				chain.doFilter(request, response);
+			} catch (final Throwable t) {
+				if (matches) {
+					logRequest.setThrowable(t);
+				}
+				if (t instanceof IOException) {
+					throw (IOException)t;
+				}
+				if (t instanceof ServletException) {
+					throw (ServletException)t;
+				}
+				throw (RuntimeException)t;
+			} finally {
+				if (matches) {
+					logRequest.setAfterProcessedDate(new Date());
+					EventLogManager.getInstance().fire(logRequest);
+				}
 			}
 		}
 	}

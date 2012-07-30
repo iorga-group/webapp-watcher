@@ -1,5 +1,5 @@
 function memoryFormatter(v, axis) {
-	return (v/(1024*1024)).toFixed(axis.tickDecimals) + " Mo";
+	return (v/(1024*1024)).toFixed(axis.tickDecimals) + " MB";
 }
 
 function cpuUsageFormatter(v, axis) {
@@ -8,8 +8,8 @@ function cpuUsageFormatter(v, axis) {
 
 function initAnalyzer(cpuUsageValues, memoryUsedValues, markings) {
 	plot = $.plot($("#placeholder"),
-		[{ data: cpuUsageValues, label: "CPU = 000.00 %" },
-		 { data: memoryUsedValues, label: "Memory = 0000.00 Mo", yaxis: 2 }],
+		[{ data: memoryUsedValues, label: "Memory = 0000.00 MB", yaxis: 2 },
+		 { data: cpuUsageValues, label: "CPU = 000.00 %" }],
    		{
 			xaxes: [{ mode: "time" }],
 			yaxes: [{ min: -20, max: 100, // min: -2, max: 100,
@@ -21,7 +21,7 @@ function initAnalyzer(cpuUsageValues, memoryUsedValues, markings) {
 				      position: 'right',
 				      alignTicksWithAxis: 1}],
 			crosshair: { mode : "x" },
-			grid: { hoverable: true, autoHighlight: false, markings: markings },
+			grid: { hoverable: true, clickable: true, autoHighlight: false, markings: markings },
 			legend: { position: 'nw' }/*,
 	        zoom: {
 	            interactive: true
@@ -83,5 +83,10 @@ function initAnalyzer(cpuUsageValues, memoryUsedValues, markings) {
 		latestPosition = pos;
 		if (!updateLegendTimeout)
 			updateLegendTimeout = setTimeout(updateLegend, 50);
+	});
+	
+	$("#placeholder").bind("plotclick",  function (event, pos, item) {
+		$("#selectedTime").val(parseInt(pos.x));
+		updateInfoPanel();
 	});
 }

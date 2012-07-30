@@ -17,11 +17,15 @@ public abstract class EventLog implements Serializable {
 		}
 	};
 
-	private final Date date;
+	protected final Date date;
 	private transient boolean completed = false;
 
 	protected EventLog() {
 		date = new Date();
+	}
+
+	protected EventLog(final Date date) {
+		this.date = date;
 	}
 
 	@Override

@@ -11,6 +11,23 @@
 		<param-name>javax.faces.SKIP_COMMENTS</param-name>
 		<param-value>true</param-value>
 	</context-param>
+	<filter-mapping>
+		<filter-name>Test Filter</filter-name>
+		<url-pattern>/test.xhtml</url-pattern>
+	</filter-mapping>
+	<filter>
+		<filter-name>Log Filter</filter-name>
+		<filter-class>com.iorga.webappwatcher.RequestLogFilter</filter-class>
+		<init-param>
+			<param-name>includes</param-name>
+			<param-value>.*\.xhtml</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>Log Filter</filter-name>
+		<url-pattern>*</url-pattern>
+	</filter-mapping>
+	
 	<servlet>
 		<servlet-name>Faces Servlet</servlet-name>
 		<servlet-class>javax.faces.webapp.FacesServlet</servlet-class>
@@ -20,4 +37,5 @@
 		<servlet-name>Faces Servlet</servlet-name>
 		<url-pattern>*.xhtml</url-pattern>
 	</servlet-mapping>
+
 </web-app>
