@@ -6,10 +6,13 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import com.iorga.webappwatcher.eventlog.SystemEventLog;
+import com.iorga.webappwatcher.util.PatternUtils;
 import com.sun.management.OperatingSystemMXBean;
 
 public class SystemEventLogger {
@@ -19,6 +22,15 @@ public class SystemEventLogger {
 	private long prevProcessCpuTime = 0L;
 
 	private boolean runLogLoop = false;
+
+	private List<Pattern> threadNameIncludes;
+	private List<Pattern> threadNameExcludes;
+
+	{
+		// By default, we only log http*
+		threadNameIncludes = new ArrayList<Pattern>();
+		threadNameIncludes.add(Pattern.compile("http.*"));
+	}
 
 	private final Runnable loop = new Runnable() {
 		@Override
@@ -56,7 +68,7 @@ public class SystemEventLogger {
 					final List<SystemEventLog.Thread> loggedThreads = new LinkedList<SystemEventLog.Thread>();
 					for (final ThreadInfo threadInfo : allThreads) {
 						final State threadState = threadInfo.getThreadState();
-						if (threadState == State.BLOCKED || threadState == State.RUNNABLE) {
+						if ((threadState == State.BLOCKED || threadState == State.RUNNABLE) && PatternUtils.matches(threadInfo.getThreadName(), threadNameIncludes, threadNameExcludes)) {
 							loggedThreads.add(new SystemEventLog.Thread(threadInfo));
 						}
 					}
@@ -91,6 +103,22 @@ public class SystemEventLogger {
 
 	public void setCpuComputationDeltaMillis(final long cpuComputationDeltaMillis) {
 		this.cpuComputationDeltaMillis = cpuComputationDeltaMillis;
+	}
+
+	public List<Pattern> getThreadNameIncludes() {
+		return threadNameIncludes;
+	}
+
+	public void setThreadNameIncludes(final List<Pattern> threadNameIncludes) {
+		this.threadNameIncludes = threadNameIncludes;
+	}
+
+	public List<Pattern> getThreadNameExcludes() {
+		return threadNameExcludes;
+	}
+
+	public void setThreadNameExcludes(final List<Pattern> threadNameExcludes) {
+		this.threadNameExcludes = threadNameExcludes;
 	}
 
 }

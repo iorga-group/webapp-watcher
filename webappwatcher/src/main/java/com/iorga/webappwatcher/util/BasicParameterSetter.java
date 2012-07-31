@@ -27,6 +27,10 @@ public class BasicParameterSetter<T, V> implements ParameterSetter<T, V> {
 		final PropertyDescriptor fieldPropertyDescriptor = findFieldPropertyDescriptor(fieldName);
 		this.writeMethod = fieldPropertyDescriptor.getWriteMethod();
 		this.fieldClass = (Class<V>) fieldPropertyDescriptor.getPropertyType();
+
+		if (this.writeMethod == null) {
+			throw new IllegalStateException("Couldn't find setter for "+ownerClass+"."+fieldName);
+		}
 	}
 
 	private PropertyDescriptor findFieldPropertyDescriptor(final String fieldName) {
@@ -36,7 +40,7 @@ public class BasicParameterSetter<T, V> implements ParameterSetter<T, V> {
 				return propertyDescriptor;
 			}
 		}
-		throw new IllegalStateException("Couldn't find setter for "+ownerClass+"."+fieldName);
+		throw new IllegalStateException("Couldn't find getter/setter for "+ownerClass+"."+fieldName);
 	}
 
 	@Override

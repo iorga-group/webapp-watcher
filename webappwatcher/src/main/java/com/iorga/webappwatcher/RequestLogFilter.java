@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +31,7 @@ import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
 import com.iorga.webappwatcher.util.BasicParameterSetter;
 import com.iorga.webappwatcher.util.ParameterSetter;
 import com.iorga.webappwatcher.util.PatternListParameterSetter;
+import com.iorga.webappwatcher.util.PatternUtils;
 
 
 
@@ -61,6 +61,8 @@ public class RequestLogFilter implements Filter {
 		addParameterSetter("deadLockThreadsSearchDeltaMillis", CpuCriticalUsageWatcher.class);
 		// initParameter for SystemEventLogger
 		addParameterSetter("cpuComputationDeltaMillis", SystemEventLogger.class);
+		addPatternListParameterSetter("threadNameIncludes", SystemEventLogger.class);
+		addPatternListParameterSetter("threadNameExcludes", SystemEventLogger.class);
 	}
 
 	// initParameter for RequestLogFilter
@@ -84,12 +86,12 @@ public class RequestLogFilter implements Filter {
 	private static final Logger log = LoggerFactory.getLogger(RequestLogFilter.class);
 
 	private List<Pattern> requestNameIncludes;
+	private List<Pattern> requestNameExcludes;
 	{
-		// Par défaut, on log seulement les fichiers .seam
+		// By default, we only log .seam
 		requestNameIncludes = new ArrayList<Pattern>();
 		requestNameIncludes.add(Pattern.compile(".*\\.seam"));
 	}
-	private List<Pattern> requestNameExcludes;
 	private String cmdRequestName = DEFAULT_CMD_REQUEST_NAME;
 
 	private SystemEventLogger systemEventLogger;
@@ -107,6 +109,7 @@ public class RequestLogFilter implements Filter {
 		eventLogManager.addEventLogListener(cpuCriticalUsageWatcher);
 		systemEventLogger = new SystemEventLogger();
 		parametersContext.put(SystemEventLogger.class, systemEventLogger);
+		parametersContext.put(RequestLogFilter.class, this);
 
 		@SuppressWarnings("unchecked")
 		final
@@ -160,19 +163,7 @@ public class RequestLogFilter implements Filter {
 			httpResponse.getWriter().write("OK : Command successfully completed");
 		} else {
 			// Test des filtres d'inclusion / exclusion
-			boolean matches = false;
-			if (requestNameIncludes != null) {
-				for (final Iterator<Pattern> iterator = requestNameIncludes.iterator(); iterator.hasNext() && !matches;) {
-					final Pattern include = iterator.next();
-					matches |= include.matcher(requestURI).matches();
-				}
-			}
-			if (requestNameExcludes != null) {
-				for (final Iterator<Pattern> iterator = requestNameExcludes.iterator(); iterator.hasNext() && matches;) {
-					final Pattern exclude = iterator.next();
-					matches &= !exclude.matcher(requestURI).matches();
-				}
-			}
+			final boolean matches = PatternUtils.matches(requestURI, requestNameIncludes, requestNameExcludes);
 			final RequestEventLog logRequest;
 			if (matches) {
 				logNbExcludedRequests();
