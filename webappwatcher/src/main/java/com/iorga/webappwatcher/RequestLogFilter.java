@@ -43,8 +43,8 @@ public class RequestLogFilter implements Filter {
 
 	private static final String WAIT_FOR_EVENT_LOG_TO_COMPLETE_MILLIS_INIT_PARAM = "waitForEventLogToCompleteMillis";
 	// initParameter for RequestLogFilter
-	private static final String EXCLUDES_INIT_PARAM = "excludes";
-	private static final String INCLUDES_INIT_PARAM = "includes";
+	private static final String REQUEST_NAME_EXCLUDES_INIT_PARAM = "requestNameExcludes";
+	private static final String REQUEST_NAME_INCLUDES_INIT_PARAM = "requestNameIncludes";
 	private static final String CMD_REQUEST_NAME_INIT_PARAM = "cmdRequestName";
 	private static final String DEFAULT_CMD_REQUEST_NAME = "RequestLogFilterCmd";
 	// initParameter for CpuCriticalUsageWatcher
@@ -58,6 +58,7 @@ public class RequestLogFilter implements Filter {
 	// Commands available
 	private static final String CMD_STOP_ALL = "stopAll";
 	private static final String CMD_START_ALL = "startAll";
+	private static final String CMD_WRITE_RETENTION_LOG = "writeRetentionLog";
 
 	private static final Logger log = LoggerFactory.getLogger(RequestLogFilter.class);
 
@@ -76,25 +77,13 @@ public class RequestLogFilter implements Filter {
 	@Override
 	public void init(final FilterConfig filterConfig) throws ServletException {
 		// Configure requestLogFilter
-		final String includesParam = filterConfig.getInitParameter(INCLUDES_INIT_PARAM);
+		final String includesParam = filterConfig.getInitParameter(REQUEST_NAME_INCLUDES_INIT_PARAM);
 		if (includesParam != null) {
-			this.includes = new ArrayList<Pattern>();
-			final String[] includes = includesParam.split(",");
-			for (final String include : includes) {
-				if (StringUtils.isNotBlank(include)) {
-					this.includes.add(Pattern.compile(include));
-				}
-			}
+			this.includes = parsePatternList(includesParam);
 		}
-		final String excludesParam = filterConfig.getInitParameter(EXCLUDES_INIT_PARAM);
+		final String excludesParam = filterConfig.getInitParameter(REQUEST_NAME_EXCLUDES_INIT_PARAM);
 		if (excludesParam != null) {
-			this.excludes = new ArrayList<Pattern>();
-			final String[] excludes = excludesParam.split(",");
-			for (final String exclude : excludes) {
-				if (StringUtils.isNotBlank(exclude)) {
-					this.excludes.add(Pattern.compile(exclude));
-				}
-			}
+			this.excludes = parsePatternList(excludesParam);
 		}
 		final String cmdRequestName = filterConfig.getInitParameter(CMD_REQUEST_NAME_INIT_PARAM);
 		if (StringUtils.isNotBlank(cmdRequestName)) {
@@ -138,6 +127,17 @@ public class RequestLogFilter implements Filter {
 		startServices();
 	}
 
+	private List<Pattern> parsePatternList(final String includesParam) {
+		final List<Pattern> patterns = new ArrayList<Pattern>();
+		final String[] includes = includesParam.split(",");
+		for (final String include : includes) {
+			if (StringUtils.isNotBlank(include)) {
+				patterns.add(Pattern.compile(include));
+			}
+		}
+		return patterns;
+	}
+
 	private void startServices() {
 		systemEventLogger.start();
 	}
@@ -154,6 +154,8 @@ public class RequestLogFilter implements Filter {
 				startServices();
 			} else if (httpRequest.getParameter(CMD_STOP_ALL) != null) {
 				stopServices();
+			} else if (httpRequest.getParameter(CMD_WRITE_RETENTION_LOG) != null) {
+				EventLogManager.getInstance().writeRetentionLog();
 			} else {
 				httpResponse.setStatus(400);
 				httpResponse.getWriter().write("ERROR : Command not understood");
