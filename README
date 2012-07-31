@@ -24,3 +24,36 @@ Avec JBoss 7, ajouter "com/sun/management" à jboss-as-7/modules/sun/jdk/main/mo
                     <path name="com/sun/management"/>
                     <path name="com/sun/script/javascript"/>
     ...
+
+Voici l'ensemble des configurations du Log Filter :
+ * requestNameIncludes : Suite de regexp (séparées par des virgules) pour inclure des requêtes (en se basant sur leur requestURI). Défaut : ".*\\.seam"
+ * requestNameExcludes : Suite de regexp (séparées par des virgules) pour exclure des requêtes (en se basant sur leur requestURI). Dans l'ordre, requestNameIncludes est testé afin de savoir si la requête est incluse, puis requestNameExcludes est testé si elle a passé le premier filtre. Défaut : null.
+ * cmdRequestName : Nom de la commande permettant de requêter le filtre. Défaut : RequestLogFilterCmd
+ * waitForEventLogToCompleteMillis : Nombre de millisecondes que le thread d'écriture du log va attendre un évènement qui n'est pas encore complété. Au delà de cette attente, il est logué avec completed = false. Défaut : 5 * 60 * 1000 (=5mn)
+ * logPath : Chemin d'écriture du fichier de log (sans l'extension). Défaut : "webappwatcherlog"
+ * eventLogRetentionMillis : Durée de rétention des évènements non encore logués. Quand une demande d'écriture est faite, les logs de toute cette durée sont écris. Défaut : 5 * 60 * 1000 (=5mn)
+ * criticalCpuUsage : Seuil d'utilisation CPU (en %, float) au delà duquel vont être logués toute la queue d'évènements. Défaut : 1,5 CPU (donc 100 / nb_CPU * 1,5)
+ * deadLockThreadsSearchDeltaMillis : Nombre de milliseconde à attendre avant de tenter une nouvelle détection de DeadLockThread. Défaut : 5 * 60 * 1000 (=5mn)
+ * cpuComputationDeltaMillis : Nombre de milliseconde à attendre avant d'enregistrer un nouveau log de type "SystemEventLog" (c'est à dire les traces CPU / mémoire etc...). Défaut : 300
+ * threadNameIncludes : Suite de regexp (séparées par des virgules) pour inclure des stack de Threads en cours (en se basant sur le nom du Thread). Défaut : "http.*"
+ * threadNameExcludes : Suite de regexp (séparées par des virgules) pour exclure des stack de Threads en cours (en se basant sur le nom du Thread). Dans l'ordre, threadNameIncludes est testé afin de savoir si le thread va être logué, puis threadNameExcludes est testé si il a passé le premier filtre. Défaut : null.
+
+Ces configurations doivent être déclarées de cette manière :
+	<filter>
+		<filter-name>Log Filter</filter-name>
+		<filter-class>com.iorga.webappwatcher.RequestLogFilter</filter-class>
+		<init-param>
+			<param-name>requestNameIncludes</param-name>
+			<param-value>.*\.xhtml</param-value>
+		</init-param>
+	</filter>
+
+Le Log Filter peut être commandé. Voici les commandes :
+ * stopAll : Arrêt du système de logging d'évènement (tous ses services)
+ * startAll : Démarrage du système de logging d'évènement (tous ses services)
+ * writeRetentionLog :  Demande d'écriture des logs
+ * downloadEventLog : Téléchargement du fichier de log
+ * printParameters : Affichage des paramètres et de leur valeurs
+ * changeParameters : Changement de paramètres du Log Filter. Chaque paramètre http associé à sa valeur est l'un des paramètres précédemment décrit.
+
+Exemple d'appel : http://localhost:8080/webappwatcher-web/RequestLogFilterCmd/printParameters
