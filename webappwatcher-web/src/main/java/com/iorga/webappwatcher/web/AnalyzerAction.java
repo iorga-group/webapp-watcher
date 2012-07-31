@@ -2,7 +2,6 @@ package com.iorga.webappwatcher.web;
 
 import java.awt.Color;
 import java.io.EOFException;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
@@ -22,6 +21,7 @@ import javax.faces.bean.ViewScoped;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 import com.iorga.webappwatcher.eventlog.SystemEventLog;
@@ -50,9 +50,9 @@ public class AnalyzerAction implements Serializable {
 	public void readEventLogs() throws IOException, ClassNotFoundException {
 //		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/5.1.0.GA/bin/webappwatcherlog.3.ser");
 //		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/7.1.1.Final/bin/webappwatcherlog.ser");
-		final FileInputStream inputStream = new FileInputStream("/tmp/webappwatcherlog.ser");
+//		final FileInputStream inputStream = new FileInputStream("/tmp/webappwatcherlog.ser");
 
-		final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+		final ObjectInputStream objectInputStream = EventLogManager.readLog("/tmp/webappwatcherlog.ser.xz");
 		try {
 			final StringBuilder cpuUsageJsonValuesBuilder = new StringBuilder();
 			final StringBuilder memoryUsedJsonValuesBuilder = new StringBuilder();

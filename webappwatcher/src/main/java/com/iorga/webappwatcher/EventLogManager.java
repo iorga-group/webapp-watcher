@@ -1,9 +1,11 @@
 package com.iorga.webappwatcher;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -14,10 +16,15 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tukaani.xz.LZMA2Options;
+import org.tukaani.xz.XZInputStream;
+import org.tukaani.xz.XZOutputStream;
 
 import com.iorga.webappwatcher.eventlog.EventLog;
 
 public class EventLogManager {
+	private static final String EVENT_LOG_FILE_EXTENSION = ".ser.xz";
+
 	private static final Logger log = LoggerFactory.getLogger(EventLogManager.class);
 
 	private static EventLogManager instance;
@@ -129,9 +136,10 @@ public class EventLogManager {
 					}
 				}
 				objectOutputStream.flush();
-				end();
 			} catch (final Exception e) {
 				log.error("Exception while trying to write to EventLog's file", e);
+			} finally {
+				end();
 			}
 		}
 
@@ -145,7 +153,7 @@ public class EventLogManager {
 
 		public synchronized void start() {
 			if (!running) {
-				new Thread(this).start();
+				new Thread(this, RetentionLogWriter.class.getName()).start();
 			}
 		}
 	}
@@ -166,11 +174,12 @@ public class EventLogManager {
 	private ObjectOutputStream getOrOpenLog() throws FileNotFoundException, IOException {
 		synchronized (objectOutputStreamLogLock) {
 			if (objectOutputStreamLog == null) {
-				File logFile = new File(logPath+".ser");
+				File logFile = new File(logPath+EVENT_LOG_FILE_EXTENSION);
 				for (int i = 1 ; logFile.exists() ; i++) {
-					logFile = new File(logPath+"."+i+".ser");	// Never re-write on a previous log because of "AC" header in an objectOutputStream, see http://stackoverflow.com/questions/1194656/appending-to-an-objectoutputstream/1195078#1195078
+					logFile = new File(logPath+"."+i+EVENT_LOG_FILE_EXTENSION);	// Never re-write on a previous log because of "AC" header in an objectOutputStream, see http://stackoverflow.com/questions/1194656/appending-to-an-objectoutputstream/1195078#1195078
 				}
-				objectOutputStreamLog = new ObjectOutputStream(new FileOutputStream(logFile));
+				objectOutputStreamLog = new ObjectOutputStream(
+					new XZOutputStream(new FileOutputStream(logFile), new LZMA2Options()));
 			}
 			return objectOutputStreamLog;
 		}
@@ -183,6 +192,10 @@ public class EventLogManager {
 				objectOutputStreamLog = null;
 			}
 		}
+	}
+
+	public static ObjectInputStream readLog(final String file) throws FileNotFoundException, IOException {
+		return new ObjectInputStream(new XZInputStream(new FileInputStream(file)));
 	}
 
 
