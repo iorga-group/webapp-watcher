@@ -16,6 +16,8 @@
 		<!-- artifact versions -->
 		<version.commons-lang>2.4</version.commons-lang>
 		<version.commons-beanutils>1.8.3</version.commons-beanutils>
+		<version.commons-io>2.4</version.commons-io>
+		<version.xz>1.1</version.xz>
 		<version.primefaces>3.3.1</version.primefaces>
 	</properties>
 
@@ -133,6 +135,11 @@ encoding/<project>=UTF-8]]>
 				<version>${version.commons-beanutils}</version>
 			</dependency>
 			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>${version.commons-io}</version>
+			</dependency>
+			<dependency>
 				<groupId>org.primefaces</groupId>
 				<artifactId>primefaces</artifactId>
 				<version>${version.primefaces}</version>
@@ -140,7 +147,7 @@ encoding/<project>=UTF-8]]>
 			<dependency>
 				<groupId>org.tukaani</groupId>
 				<artifactId>xz</artifactId>
-				<version>1.1</version>
+				<version>${version.xz}</version>
 			</dependency>
 
 			<!-- Provided -->

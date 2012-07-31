@@ -73,6 +73,7 @@ public class RequestLogFilter implements Filter {
 	private static final String CMD_STOP_ALL = "stopAll";
 	private static final String CMD_START_ALL = "startAll";
 	private static final String CMD_WRITE_RETENTION_LOG = "writeRetentionLog";
+	private static final String CMD_DOWNLOAD_EVENT_LOG = "downloadEventLog";
 	private static final String CMD_CHANGE_PARAMETERS = "changeParameters";
 	private static final String CMD_PRINT_PARAMETERS = "printParameters";
 
@@ -220,12 +221,15 @@ public class RequestLogFilter implements Filter {
 				writeParameter(writer, parameterHandlerEntry.getKey(), parameterHandlerEntry.getValue());
 			}
 			return;
+		} else if (requestURI.endsWith(CMD_DOWNLOAD_EVENT_LOG)) {
+			EventLogManager.getInstance().writeEventLogToHttpServletResponse(httpResponse);
+			return;
 		} else {
-			httpResponse.setStatus(400);
+			httpResponse.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			httpResponse.getWriter().write("ERROR : Command not understood");
 			return;
 		}
-		httpResponse.setStatus(200);
+		httpResponse.setStatus(HttpServletResponse.SC_OK);
 		httpResponse.getWriter().write("OK : Command successfully completed");
 	}
 

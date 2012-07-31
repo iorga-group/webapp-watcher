@@ -14,6 +14,10 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tukaani.xz.LZMA2Options;
@@ -44,6 +48,7 @@ public class EventLogManager {
 	private long eventLogRetentionMillis = 5 * 60 * 1000;	// 5mn log by default
 	private String logPath = "webappwatcherlog";
 
+	private File logFile;
 	private ObjectOutputStream objectOutputStreamLog;
 	private final Object objectOutputStreamLogLock = new Object();
 
@@ -174,7 +179,7 @@ public class EventLogManager {
 	private ObjectOutputStream getOrOpenLog() throws FileNotFoundException, IOException {
 		synchronized (objectOutputStreamLogLock) {
 			if (objectOutputStreamLog == null) {
-				File logFile = new File(logPath+EVENT_LOG_FILE_EXTENSION);
+				logFile = new File(logPath+EVENT_LOG_FILE_EXTENSION);
 				for (int i = 1 ; logFile.exists() ; i++) {
 					logFile = new File(logPath+"."+i+EVENT_LOG_FILE_EXTENSION);	// Never re-write on a previous log because of "AC" header in an objectOutputStream, see http://stackoverflow.com/questions/1194656/appending-to-an-objectoutputstream/1195078#1195078
 				}
@@ -190,6 +195,7 @@ public class EventLogManager {
 			if (objectOutputStreamLog != null) {
 				objectOutputStreamLog.close();
 				objectOutputStreamLog = null;
+				logFile = null;
 			}
 		}
 	}
@@ -222,6 +228,29 @@ public class EventLogManager {
 
 	public void setWaitForEventLogToCompleteMillis(final long waitForEventLogToCompleteMillis) {
 		this.waitForEventLogToCompleteMillis = waitForEventLogToCompleteMillis;
+	}
+
+	public void writeEventLogToHttpServletResponse(final HttpServletResponse httpResponse) throws IOException {
+		synchronized (objectOutputStreamLogLock) {
+			if (logFile != null && logFile.exists()) {
+				httpResponse.setStatus(HttpServletResponse.SC_OK);
+				httpResponse.setContentType("application/x-xz");
+				httpResponse.setHeader("Content-Disposition", "attachment; filename=\""+logFile.getName()+"\"");
+				httpResponse.setContentLength((int) logFile.length());
+
+				final FileInputStream inputStream = new FileInputStream(logFile);
+				final ServletOutputStream outputStream = httpResponse.getOutputStream();
+				try {
+					IOUtils.copy(inputStream, outputStream);
+				} finally {
+					inputStream.close();
+					outputStream.close();
+				}
+			} else {
+				httpResponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
+				httpResponse.getWriter().write("No log available at the moment.");
+			}
+		}
 	}
 
 }
