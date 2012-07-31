@@ -18,7 +18,7 @@ public abstract class EventLog implements Serializable {
 	};
 
 	protected final Date date;
-	private transient boolean completed = false;
+	private boolean completed = false;
 
 	protected EventLog() {
 		date = new Date();

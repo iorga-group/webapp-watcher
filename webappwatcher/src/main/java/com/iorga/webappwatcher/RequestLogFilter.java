@@ -102,6 +102,7 @@ public class RequestLogFilter implements Filter {
 
 	private int nbExcludedRequests = 0;
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void init(final FilterConfig filterConfig) throws ServletException {
 		// Initializing context
@@ -114,10 +115,7 @@ public class RequestLogFilter implements Filter {
 		parametersContext.put(SystemEventLogger.class, systemEventLogger);
 		parametersContext.put(RequestLogFilter.class, this);
 
-		@SuppressWarnings("unchecked")
-		final
-		List<String> parameterNames = Collections.list(filterConfig.getInitParameterNames());
-		for (final String parameterName : parameterNames) {
+		for (final String parameterName : (List<String>)Collections.list(filterConfig.getInitParameterNames())) {
 			final String value = filterConfig.getInitParameter(parameterName);
 			setParameter(parameterName, value);
 		}
@@ -130,7 +128,6 @@ public class RequestLogFilter implements Filter {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain) throws IOException, ServletException {
 		final HttpServletRequest httpRequest = (HttpServletRequest)request;
 		final String requestURI = httpRequest.getRequestURI();
@@ -138,32 +135,10 @@ public class RequestLogFilter implements Filter {
 		final boolean matches = PatternUtils.matches(requestURI, requestNameIncludes, requestNameExcludes);
 		final RequestEventLog logRequest;
 		if (matches) {
-			// create a log request
+			// log previous excluded requests
 			logNbExcludedRequests();
-			logRequest = EventLogManager.getInstance().addEventLog(RequestEventLog.class);
-			logRequest.setRequestURI(requestURI);
-			logRequest.setMethod(httpRequest.getMethod());
-			final Enumeration<String> parameterNames = httpRequest.getParameterNames();
-			final List<Parameter> parameters = new LinkedList<Parameter>();
-			while (parameterNames.hasMoreElements()) {
-				final String parameterName = parameterNames.nextElement();
-				parameters.add(new Parameter(parameterName, httpRequest.getParameterValues(parameterName)));
-			}
-			logRequest.setParameters(parameters.toArray(new Parameter[parameters.size()]));
-			final Enumeration<String> headerNames = httpRequest.getHeaderNames();
-			final List<Header> headers = new LinkedList<Header>();
-			while (headerNames.hasMoreElements()) {
-				final String headerName = headerNames.nextElement();
-				headers.add(new Header(headerName, httpRequest.getHeader(headerName)));
-			}
-			logRequest.setHeaders(headers.toArray(new Header[headers.size()]));
-			final Principal userPrincipal = httpRequest.getUserPrincipal();
-			if (userPrincipal != null) {
-				logRequest.setPrincipal(userPrincipal.getName());
-			}
-			final Thread currentThread = Thread.currentThread();
-			logRequest.setThreadName(currentThread.getName());
-			logRequest.setThreadId(currentThread.getId());
+			// create a log request
+			logRequest = createRequestEventLog(httpRequest, requestURI);
 		} else {
 			logRequest = null;
 			incrementNbExcludedRequests();
@@ -193,6 +168,35 @@ public class RequestLogFilter implements Filter {
 				EventLogManager.getInstance().fire(logRequest);
 			}
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private RequestEventLog createRequestEventLog(final HttpServletRequest httpRequest, final String requestURI) {
+		final RequestEventLog logRequest = EventLogManager.getInstance().addEventLog(RequestEventLog.class);
+		logRequest.setRequestURI(requestURI);
+		logRequest.setMethod(httpRequest.getMethod());
+		final Enumeration<String> parameterNames = httpRequest.getParameterNames();
+		final List<Parameter> parameters = new LinkedList<Parameter>();
+		while (parameterNames.hasMoreElements()) {
+			final String parameterName = parameterNames.nextElement();
+			parameters.add(new Parameter(parameterName, httpRequest.getParameterValues(parameterName)));
+		}
+		logRequest.setParameters(parameters.toArray(new Parameter[parameters.size()]));
+		final Enumeration<String> headerNames = httpRequest.getHeaderNames();
+		final List<Header> headers = new LinkedList<Header>();
+		while (headerNames.hasMoreElements()) {
+			final String headerName = headerNames.nextElement();
+			headers.add(new Header(headerName, httpRequest.getHeader(headerName)));
+		}
+		logRequest.setHeaders(headers.toArray(new Header[headers.size()]));
+		final Principal userPrincipal = httpRequest.getUserPrincipal();
+		if (userPrincipal != null) {
+			logRequest.setPrincipal(userPrincipal.getName());
+		}
+		final Thread currentThread = Thread.currentThread();
+		logRequest.setThreadName(currentThread.getName());
+		logRequest.setThreadId(currentThread.getId());
+		return logRequest;
 	}
 
 	@SuppressWarnings("unchecked")

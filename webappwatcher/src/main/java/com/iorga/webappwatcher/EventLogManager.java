@@ -118,16 +118,14 @@ public class EventLogManager {
 						while (!eventLog.isCompleted() && (new Date().getTime() - beginWaitIsComplete.getTime()) < waitForEventLogToCompleteMillis) {
 							Thread.sleep(SLEEP_BETWEEN_TEST_FOR_EVENT_LOG_TO_COMPLETE_MILLIS);
 						}
-						if (eventLog.isCompleted()) {
-							// that log is completed, let's write it in the log file
-							if (log.isDebugEnabled()) {
-								log.debug(eventLog.toString());
-							}
-							objectOutputStream.writeObject(eventLog);
-						} else {
-							// ignore it = it will never be written anywhere
-							log.info("Ignoring event "+eventLog);
+						// that log is completed, let's write it in the log file
+						if (!eventLog.isCompleted()) {
+							log.info("Writing not completed "+eventLog.getClass().getName()+"#"+eventLog.getDate().getTime());
 						}
+						if (log.isDebugEnabled()) {
+							log.debug("Writing "+eventLog.toString());
+						}
+						objectOutputStream.writeObject(eventLog);
 					}
 				}
 				objectOutputStream.flush();

@@ -16,9 +16,12 @@ import com.iorga.webappwatcher.eventlog.SystemEventLog;
 public class CpuCriticalUsageWatcher implements EventLogListener<SystemEventLog> {
 	private static final Logger log = LoggerFactory.getLogger(CpuCriticalUsageWatcher.class);
 
-	private float criticalCpuUsage = Math.min(70f, 100f / ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors());	// Default to over one processor
+	private float criticalCpuUsage = Math.min(70f, 100f / ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors() * 1.5f);	// Default to over 1.5 processors
 	private long deadLockThreadsSearchDeltaMillis = 5 * 60 * 1000; // Default every 5mn
-	private Date lastDeadLockThreadsSearch = new Date(0);
+	private Date lastDeadLockThreadsSearchDate = new Date(0);
+	private final long infoMessagesDeltaMillis = 5 * 60 * 1000; // Displays info messages every 5mn at least
+	private Date lastInfoMessageDate = new Date(0);
+
 
 	@Override
 	public Class<SystemEventLog> getListenedEventLogType() {
@@ -31,7 +34,7 @@ public class CpuCriticalUsageWatcher implements EventLogListener<SystemEventLog>
 			try {
 				final Date currentDate = new Date();
 				final EventLogManager eventLogManager = EventLogManager.getInstance();
-				if (currentDate.getTime() - lastDeadLockThreadsSearch.getTime() > deadLockThreadsSearchDeltaMillis) {
+				if (currentDate.getTime() - lastDeadLockThreadsSearchDate.getTime() > deadLockThreadsSearchDeltaMillis) {
 					// Search for deadLockedThread and log them
 					final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 					final long[] deadlockedThreadIds = threadMXBean.findDeadlockedThreads();
@@ -45,10 +48,13 @@ public class CpuCriticalUsageWatcher implements EventLogListener<SystemEventLog>
 						deadLockedThreadsEventLog.setDeadLockedThreads(deadLockedThreads);
 						eventLogManager.fire(deadLockedThreadsEventLog);
 					}
-					lastDeadLockThreadsSearch = currentDate;
+					lastDeadLockThreadsSearchDate = currentDate;
 				}
 
-				log.info("CPU usage "+eventLog.getCpuUsage()+" over "+criticalCpuUsage+", writing log.");
+				if (currentDate.getTime() - lastInfoMessageDate.getTime() > infoMessagesDeltaMillis) {
+					log.info("CPU usage "+eventLog.getCpuUsage()+" over "+criticalCpuUsage+", writing log. (That message will not be repeated for "+infoMessagesDeltaMillis+" millis)");
+					lastInfoMessageDate = currentDate;
+				}
 				eventLogManager.writeRetentionLog();
 			} catch (final IOException e) {
 				log.warn("Couldn't write retention log", e);
