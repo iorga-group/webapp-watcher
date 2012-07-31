@@ -200,7 +200,8 @@ public class EventLogManager {
 		return logPath;
 	}
 
-	public void setLogPath(final String logPath) {
+	public void setLogPath(final String logPath) throws IOException {
+		closeLog();
 		this.logPath = logPath;
 	}
 

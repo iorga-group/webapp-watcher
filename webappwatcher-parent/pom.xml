@@ -14,6 +14,7 @@
 
 		<!-- artifact versions -->
 		<version.commons-lang>2.4</version.commons-lang>
+		<version.commons-beanutils>1.8.3</version.commons-beanutils>
 		<version.primefaces>3.3.1</version.primefaces>
 	</properties>
 
@@ -124,6 +125,11 @@ encoding/<project>=UTF-8]]>
 				<groupId>commons-lang</groupId>
 				<artifactId>commons-lang</artifactId>
 				<version>${version.commons-lang}</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-beanutils</groupId>
+				<artifactId>commons-beanutils</artifactId>
+				<version>${version.commons-beanutils}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.primefaces</groupId>

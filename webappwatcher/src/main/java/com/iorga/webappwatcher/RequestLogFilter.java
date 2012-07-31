@@ -3,11 +3,14 @@ package com.iorga.webappwatcher;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
@@ -19,7 +22,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,13 +29,16 @@ import com.iorga.webappwatcher.eventlog.ExcludedRequestsEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Header;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
+import com.iorga.webappwatcher.util.BasicParameterSetter;
+import com.iorga.webappwatcher.util.ParameterSetter;
+import com.iorga.webappwatcher.util.PatternListParameterSetter;
 
 
 
 /**
  * Paramètres du filtre : <ul>
- * <li>includes : Valeurs séparées par des "," qui définissent les fichiers qui doivent être inclus. Par défaut, vaut ".*\.seam"</li>
- * <li>excludes : Valeurs séparées par des "," qui définissent les fichiers qui doivent être exclus.</li>
+ * <li>requestNameIncludes : Valeurs séparées par des "," qui définissent les fichiers qui doivent être inclus. Par défaut, vaut ".*\.seam"</li>
+ * <li>requestNameExcludes : Valeurs séparées par des "," qui définissent les fichiers qui doivent être exclus.</li>
  * </ul>
  *
  * @author aogier
@@ -41,101 +46,87 @@ import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
  */
 public class RequestLogFilter implements Filter {
 
-	private static final String WAIT_FOR_EVENT_LOG_TO_COMPLETE_MILLIS_INIT_PARAM = "waitForEventLogToCompleteMillis";
+	private static Map<String, ParameterSetter<?, ?>> parameterSetters = new HashMap<String, ParameterSetter<?,?>>();
+	static {
+		// initParameter for RequestLogFilter
+		addPatternListParameterSetter("requestNameExcludes", RequestLogFilter.class);
+		addPatternListParameterSetter("requestNameIncludes", RequestLogFilter.class);
+		addParameterSetter("cmdRequestName", RequestLogFilter.class);
+		// initParameter for EventLogManager
+		addParameterSetter("waitForEventLogToCompleteMillis", EventLogManager.class);
+		addParameterSetter("logPath", EventLogManager.class);
+		addParameterSetter("eventLogRetentionMillis", EventLogManager.class);
+		// initParameter for CpuCriticalUsageWatcher
+		addParameterSetter("criticalCpuUsage", CpuCriticalUsageWatcher.class);
+		addParameterSetter("deadLockThreadsSearchDeltaMillis", CpuCriticalUsageWatcher.class);
+		// initParameter for SystemEventLogger
+		addParameterSetter("cpuComputationDeltaMillis", SystemEventLogger.class);
+	}
+
 	// initParameter for RequestLogFilter
-	private static final String REQUEST_NAME_EXCLUDES_INIT_PARAM = "requestNameExcludes";
-	private static final String REQUEST_NAME_INCLUDES_INIT_PARAM = "requestNameIncludes";
-	private static final String CMD_REQUEST_NAME_INIT_PARAM = "cmdRequestName";
 	private static final String DEFAULT_CMD_REQUEST_NAME = "RequestLogFilterCmd";
-	// initParameter for CpuCriticalUsageWatcher
-	private static final String CRITICAL_CPU_USAGE_INIT_PARAM = "criticalCpuUsage";
-	private static final String DEAD_LOCK_THREADS_SEARCH_DELTA_MILLIS_INIT_PARAM = "deadLockThreadsSearchDeltaMillis";
-	// initParameter for SystemEventLogger
-	private static final String CPU_COMPUTATION_DELTA_MILLIS_INIT_PARAM = "cpuComputationDeltaMillis";
-	// initParameter for EventLogManager
-	private static final String LOG_PATH_INIT_PARAM = "logPath";
-	private static final String EVENT_LOG_RETENTION_MILLIS_INIT_PARAM = "eventLogRetentionMillis";
 	// Commands available
 	private static final String CMD_STOP_ALL = "stopAll";
 	private static final String CMD_START_ALL = "startAll";
 	private static final String CMD_WRITE_RETENTION_LOG = "writeRetentionLog";
+	private static final String CMD_CHANGE_PARAMETERS = "changeParameters";
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static <T> void addPatternListParameterSetter(final String parameterName, final Class<T> ownerClass) {
+		parameterSetters.put(parameterName, new PatternListParameterSetter(ownerClass, parameterName));
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static <T, V> void addParameterSetter(final String parameterName, final Class<T> ownerClass) {
+		parameterSetters.put(parameterName, new BasicParameterSetter(ownerClass, parameterName));
+	}
 
 	private static final Logger log = LoggerFactory.getLogger(RequestLogFilter.class);
 
-	private List<Pattern> includes;
+	private List<Pattern> requestNameIncludes;
 	{
 		// Par défaut, on log seulement les fichiers .seam
-		includes = new ArrayList<Pattern>();
-		includes.add(Pattern.compile(".*\\.seam"));
+		requestNameIncludes = new ArrayList<Pattern>();
+		requestNameIncludes.add(Pattern.compile(".*\\.seam"));
 	}
-	private List<Pattern> excludes;
+	private List<Pattern> requestNameExcludes;
+	private String cmdRequestName = DEFAULT_CMD_REQUEST_NAME;
 
 	private SystemEventLogger systemEventLogger;
+	private final Map<Class<?>, Object> parametersContext = new HashMap<Class<?>, Object>();
+
 	private int nbExcludedRequests = 0;
-	private String cmdRequestName = DEFAULT_CMD_REQUEST_NAME;
 
 	@Override
 	public void init(final FilterConfig filterConfig) throws ServletException {
-		// Configure requestLogFilter
-		final String includesParam = filterConfig.getInitParameter(REQUEST_NAME_INCLUDES_INIT_PARAM);
-		if (includesParam != null) {
-			this.includes = parsePatternList(includesParam);
-		}
-		final String excludesParam = filterConfig.getInitParameter(REQUEST_NAME_EXCLUDES_INIT_PARAM);
-		if (excludesParam != null) {
-			this.excludes = parsePatternList(excludesParam);
-		}
-		final String cmdRequestName = filterConfig.getInitParameter(CMD_REQUEST_NAME_INIT_PARAM);
-		if (StringUtils.isNotBlank(cmdRequestName)) {
-			this.cmdRequestName = cmdRequestName;
-		}
-		/// Initializing system event logger
+		// Initializing context
 		final CpuCriticalUsageWatcher cpuCriticalUsageWatcher = new CpuCriticalUsageWatcher();
-		// Configure cpuCriticalUsageWatcher
-		final String criticalCpuUsage = filterConfig.getInitParameter(CRITICAL_CPU_USAGE_INIT_PARAM);
-		if (StringUtils.isNotBlank(criticalCpuUsage)) {
-			cpuCriticalUsageWatcher.setCriticalCpuUsage(Float.parseFloat(criticalCpuUsage));
-		}
-		final String deadLockThreadsSearchDeltaMillis = filterConfig.getInitParameter(DEAD_LOCK_THREADS_SEARCH_DELTA_MILLIS_INIT_PARAM);
-		if (StringUtils.isNotBlank(deadLockThreadsSearchDeltaMillis)) {
-			cpuCriticalUsageWatcher.setDeadLockThreadsSearchDeltaMillis(Long.parseLong(deadLockThreadsSearchDeltaMillis));
-		}
-
+		parametersContext.put(CpuCriticalUsageWatcher.class, cpuCriticalUsageWatcher);
 		final EventLogManager eventLogManager = EventLogManager.getInstance();
-		// Configure the eventLogManager
-		final String eventLogRetentionMillis = filterConfig.getInitParameter(EVENT_LOG_RETENTION_MILLIS_INIT_PARAM);
-		if (StringUtils.isNotBlank(eventLogRetentionMillis)) {
-			eventLogManager.setEventLogRetentionMillis(Long.parseLong(eventLogRetentionMillis));
-		}
-		final String logPath = filterConfig.getInitParameter(LOG_PATH_INIT_PARAM);
-		if (StringUtils.isNotBlank(logPath)) {
-			eventLogManager.setLogPath(logPath);
-		}
-		final String waitForEventLogToCompleteMillis = filterConfig.getInitParameter(WAIT_FOR_EVENT_LOG_TO_COMPLETE_MILLIS_INIT_PARAM);
-		if (StringUtils.isNotBlank(waitForEventLogToCompleteMillis)) {
-			eventLogManager.setWaitForEventLogToCompleteMillis(Long.parseLong(waitForEventLogToCompleteMillis));
-		}
+		parametersContext.put(EventLogManager.class, eventLogManager);
 		eventLogManager.addEventLogListener(cpuCriticalUsageWatcher);
-
 		systemEventLogger = new SystemEventLogger();
-		// Configure systemEventLogger
-		final String cpuComputationDeltaMillis = filterConfig.getInitParameter(CPU_COMPUTATION_DELTA_MILLIS_INIT_PARAM);
-		if (StringUtils.isNotBlank(cpuComputationDeltaMillis)) {
-			systemEventLogger.setCpuComputationDeltaMillis(Long.parseLong(cpuComputationDeltaMillis));
+		parametersContext.put(SystemEventLogger.class, systemEventLogger);
+
+		@SuppressWarnings("unchecked")
+		final
+		List<String> parameterNames = Collections.list(filterConfig.getInitParameterNames());
+		for (final String parameterName : parameterNames) {
+			final String value = filterConfig.getInitParameter(parameterName);
+			setParameter(parameterName, value);
 		}
 
 		startServices();
 	}
 
-	private List<Pattern> parsePatternList(final String includesParam) {
-		final List<Pattern> patterns = new ArrayList<Pattern>();
-		final String[] includes = includesParam.split(",");
-		for (final String include : includes) {
-			if (StringUtils.isNotBlank(include)) {
-				patterns.add(Pattern.compile(include));
-			}
+	@SuppressWarnings("unchecked")
+	private <T, V> void setParameter(final String parameterName, final String value) {
+		final ParameterSetter<T, V> parameterSetter = (ParameterSetter<T, V>) parameterSetters.get(parameterName);
+		if (parameterSetter == null) {
+			log.warn("init-parameter "+parameterName+" is not handled. Ignoring.");
+		} else {
+			parameterSetter.setFieldFromString((T) parametersContext.get(parameterSetter.getOwnerClass()), value);
 		}
-		return patterns;
 	}
 
 	private void startServices() {
@@ -147,15 +138,19 @@ public class RequestLogFilter implements Filter {
 	public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain) throws IOException, ServletException {
 		final HttpServletRequest httpRequest = (HttpServletRequest)request;
 		final String requestURI = httpRequest.getRequestURI();
-		if (requestURI.endsWith(cmdRequestName)) {
+		if (httpRequest.getServletPath().startsWith("/"+cmdRequestName)) {
 			// This is a Command Request, let's execute it
 			final HttpServletResponse httpResponse = ((HttpServletResponse)response);
-			if (httpRequest.getParameter(CMD_START_ALL) != null) {
+			if (requestURI.endsWith(CMD_START_ALL)) {
 				startServices();
-			} else if (httpRequest.getParameter(CMD_STOP_ALL) != null) {
+			} else if (requestURI.endsWith(CMD_STOP_ALL)) {
 				stopServices();
-			} else if (httpRequest.getParameter(CMD_WRITE_RETENTION_LOG) != null) {
+			} else if (requestURI.endsWith(CMD_WRITE_RETENTION_LOG)) {
 				EventLogManager.getInstance().writeRetentionLog();
+			} else if (requestURI.endsWith(CMD_CHANGE_PARAMETERS)) {
+				for(final String parameterName : (List<String>)Collections.list(httpRequest.getParameterNames())) {
+					setParameter(parameterName, httpRequest.getParameter(parameterName));
+				}
 			} else {
 				httpResponse.setStatus(400);
 				httpResponse.getWriter().write("ERROR : Command not understood");
@@ -166,14 +161,14 @@ public class RequestLogFilter implements Filter {
 		} else {
 			// Test des filtres d'inclusion / exclusion
 			boolean matches = false;
-			if (includes != null) {
-				for (final Iterator<Pattern> iterator = includes.iterator(); iterator.hasNext() && !matches;) {
+			if (requestNameIncludes != null) {
+				for (final Iterator<Pattern> iterator = requestNameIncludes.iterator(); iterator.hasNext() && !matches;) {
 					final Pattern include = iterator.next();
 					matches |= include.matcher(requestURI).matches();
 				}
 			}
-			if (excludes != null) {
-				for (final Iterator<Pattern> iterator = excludes.iterator(); iterator.hasNext() && matches;) {
+			if (requestNameExcludes != null) {
+				for (final Iterator<Pattern> iterator = requestNameExcludes.iterator(); iterator.hasNext() && matches;) {
 					final Pattern exclude = iterator.next();
 					matches &= !exclude.matcher(requestURI).matches();
 				}
@@ -260,4 +255,28 @@ public class RequestLogFilter implements Filter {
 		}
 	}
 
+
+	public List<Pattern> getRequestNameIncludes() {
+		return requestNameIncludes;
+	}
+
+	public void setRequestNameIncludes(final List<Pattern> requestNameIncludes) {
+		this.requestNameIncludes = requestNameIncludes;
+	}
+
+	public List<Pattern> getRequestNameExcludes() {
+		return requestNameExcludes;
+	}
+
+	public void setRequestNameExcludes(final List<Pattern> requestNameExcludes) {
+		this.requestNameExcludes = requestNameExcludes;
+	}
+
+	public String getCmdRequestName() {
+		return cmdRequestName;
+	}
+
+	public void setCmdRequestName(final String cmdRequestName) {
+		this.cmdRequestName = cmdRequestName;
+	}
 }
