@@ -1,6 +1,7 @@
 package com.iorga.webappwatcher;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
@@ -28,9 +30,9 @@ import com.iorga.webappwatcher.eventlog.ExcludedRequestsEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Header;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
-import com.iorga.webappwatcher.util.BasicParameterSetter;
-import com.iorga.webappwatcher.util.ParameterSetter;
-import com.iorga.webappwatcher.util.PatternListParameterSetter;
+import com.iorga.webappwatcher.util.BasicParameterHandler;
+import com.iorga.webappwatcher.util.ParameterHandler;
+import com.iorga.webappwatcher.util.PatternListParameterHandler;
 import com.iorga.webappwatcher.util.PatternUtils;
 
 
@@ -46,23 +48,23 @@ import com.iorga.webappwatcher.util.PatternUtils;
  */
 public class RequestLogFilter implements Filter {
 
-	private static Map<String, ParameterSetter<?, ?>> parameterSetters = new HashMap<String, ParameterSetter<?,?>>();
+	private static Map<String, ParameterHandler<?, ?>> parameterHandlers = new HashMap<String, ParameterHandler<?,?>>();
 	static {
 		// initParameter for RequestLogFilter
-		addPatternListParameterSetter("requestNameExcludes", RequestLogFilter.class);
-		addPatternListParameterSetter("requestNameIncludes", RequestLogFilter.class);
-		addParameterSetter("cmdRequestName", RequestLogFilter.class);
+		addPatternListParameterHandler("requestNameExcludes", RequestLogFilter.class);
+		addPatternListParameterHandler("requestNameIncludes", RequestLogFilter.class);
+		addParameterHandler("cmdRequestName", RequestLogFilter.class);
 		// initParameter for EventLogManager
-		addParameterSetter("waitForEventLogToCompleteMillis", EventLogManager.class);
-		addParameterSetter("logPath", EventLogManager.class);
-		addParameterSetter("eventLogRetentionMillis", EventLogManager.class);
+		addParameterHandler("waitForEventLogToCompleteMillis", EventLogManager.class);
+		addParameterHandler("logPath", EventLogManager.class);
+		addParameterHandler("eventLogRetentionMillis", EventLogManager.class);
 		// initParameter for CpuCriticalUsageWatcher
-		addParameterSetter("criticalCpuUsage", CpuCriticalUsageWatcher.class);
-		addParameterSetter("deadLockThreadsSearchDeltaMillis", CpuCriticalUsageWatcher.class);
+		addParameterHandler("criticalCpuUsage", CpuCriticalUsageWatcher.class);
+		addParameterHandler("deadLockThreadsSearchDeltaMillis", CpuCriticalUsageWatcher.class);
 		// initParameter for SystemEventLogger
-		addParameterSetter("cpuComputationDeltaMillis", SystemEventLogger.class);
-		addPatternListParameterSetter("threadNameIncludes", SystemEventLogger.class);
-		addPatternListParameterSetter("threadNameExcludes", SystemEventLogger.class);
+		addParameterHandler("cpuComputationDeltaMillis", SystemEventLogger.class);
+		addPatternListParameterHandler("threadNameIncludes", SystemEventLogger.class);
+		addPatternListParameterHandler("threadNameExcludes", SystemEventLogger.class);
 	}
 
 	// initParameter for RequestLogFilter
@@ -72,15 +74,16 @@ public class RequestLogFilter implements Filter {
 	private static final String CMD_START_ALL = "startAll";
 	private static final String CMD_WRITE_RETENTION_LOG = "writeRetentionLog";
 	private static final String CMD_CHANGE_PARAMETERS = "changeParameters";
+	private static final String CMD_PRINT_PARAMETERS = "printParameters";
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static <T> void addPatternListParameterSetter(final String parameterName, final Class<T> ownerClass) {
-		parameterSetters.put(parameterName, new PatternListParameterSetter(ownerClass, parameterName));
+	private static <T> void addPatternListParameterHandler(final String parameterName, final Class<T> ownerClass) {
+		parameterHandlers.put(parameterName, new PatternListParameterHandler(ownerClass, parameterName));
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static <T, V> void addParameterSetter(final String parameterName, final Class<T> ownerClass) {
-		parameterSetters.put(parameterName, new BasicParameterSetter(ownerClass, parameterName));
+	private static <T, V> void addParameterHandler(final String parameterName, final Class<T> ownerClass) {
+		parameterHandlers.put(parameterName, new BasicParameterHandler(ownerClass, parameterName));
 	}
 
 	private static final Logger log = LoggerFactory.getLogger(RequestLogFilter.class);
@@ -122,16 +125,6 @@ public class RequestLogFilter implements Filter {
 		startServices();
 	}
 
-	@SuppressWarnings("unchecked")
-	private <T, V> void setParameter(final String parameterName, final String value) {
-		final ParameterSetter<T, V> parameterSetter = (ParameterSetter<T, V>) parameterSetters.get(parameterName);
-		if (parameterSetter == null) {
-			log.warn("init-parameter "+parameterName+" is not handled. Ignoring.");
-		} else {
-			parameterSetter.setFieldFromString((T) parametersContext.get(parameterSetter.getOwnerClass()), value);
-		}
-	}
-
 	private void startServices() {
 		systemEventLogger.start();
 	}
@@ -141,81 +134,95 @@ public class RequestLogFilter implements Filter {
 	public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain) throws IOException, ServletException {
 		final HttpServletRequest httpRequest = (HttpServletRequest)request;
 		final String requestURI = httpRequest.getRequestURI();
-		if (httpRequest.getServletPath().startsWith("/"+cmdRequestName)) {
-			// This is a Command Request, let's execute it
-			final HttpServletResponse httpResponse = ((HttpServletResponse)response);
-			if (requestURI.endsWith(CMD_START_ALL)) {
-				startServices();
-			} else if (requestURI.endsWith(CMD_STOP_ALL)) {
-				stopServices();
-			} else if (requestURI.endsWith(CMD_WRITE_RETENTION_LOG)) {
-				EventLogManager.getInstance().writeRetentionLog();
-			} else if (requestURI.endsWith(CMD_CHANGE_PARAMETERS)) {
-				for(final String parameterName : (List<String>)Collections.list(httpRequest.getParameterNames())) {
-					setParameter(parameterName, httpRequest.getParameter(parameterName));
-				}
-			} else {
-				httpResponse.setStatus(400);
-				httpResponse.getWriter().write("ERROR : Command not understood");
-				return;
-			}
-			httpResponse.setStatus(200);
-			httpResponse.getWriter().write("OK : Command successfully completed");
-		} else {
-			// Test des filtres d'inclusion / exclusion
-			final boolean matches = PatternUtils.matches(requestURI, requestNameIncludes, requestNameExcludes);
-			final RequestEventLog logRequest;
-			if (matches) {
-				logNbExcludedRequests();
-				logRequest = EventLogManager.getInstance().addEventLog(RequestEventLog.class);
-				logRequest.setRequestURI(requestURI);
-				logRequest.setMethod(httpRequest.getMethod());
-				final Enumeration<String> parameterNames = httpRequest.getParameterNames();
-				final List<Parameter> parameters = new LinkedList<Parameter>();
-				while (parameterNames.hasMoreElements()) {
-					final String parameterName = parameterNames.nextElement();
-					parameters.add(new Parameter(parameterName, httpRequest.getParameterValues(parameterName)));
-				}
-				logRequest.setParameters(parameters.toArray(new Parameter[parameters.size()]));
-				final Enumeration<String> headerNames = httpRequest.getHeaderNames();
-				final List<Header> headers = new LinkedList<Header>();
-				while (headerNames.hasMoreElements()) {
-					final String headerName = headerNames.nextElement();
-					headers.add(new Header(headerName, httpRequest.getHeader(headerName)));
-				}
-				logRequest.setHeaders(headers.toArray(new Header[headers.size()]));
-				final Principal userPrincipal = httpRequest.getUserPrincipal();
-				if (userPrincipal != null) {
-					logRequest.setPrincipal(userPrincipal.getName());
-				}
-				final Thread currentThread = Thread.currentThread();
-				logRequest.setThreadName(currentThread.getName());
-				logRequest.setThreadId(currentThread.getId());
-			} else {
-				logRequest = null;
-				incrementNbExcludedRequests();
-			}
 
-			try {
+		final boolean matches = PatternUtils.matches(requestURI, requestNameIncludes, requestNameExcludes);
+		final RequestEventLog logRequest;
+		if (matches) {
+			// create a log request
+			logNbExcludedRequests();
+			logRequest = EventLogManager.getInstance().addEventLog(RequestEventLog.class);
+			logRequest.setRequestURI(requestURI);
+			logRequest.setMethod(httpRequest.getMethod());
+			final Enumeration<String> parameterNames = httpRequest.getParameterNames();
+			final List<Parameter> parameters = new LinkedList<Parameter>();
+			while (parameterNames.hasMoreElements()) {
+				final String parameterName = parameterNames.nextElement();
+				parameters.add(new Parameter(parameterName, httpRequest.getParameterValues(parameterName)));
+			}
+			logRequest.setParameters(parameters.toArray(new Parameter[parameters.size()]));
+			final Enumeration<String> headerNames = httpRequest.getHeaderNames();
+			final List<Header> headers = new LinkedList<Header>();
+			while (headerNames.hasMoreElements()) {
+				final String headerName = headerNames.nextElement();
+				headers.add(new Header(headerName, httpRequest.getHeader(headerName)));
+			}
+			logRequest.setHeaders(headers.toArray(new Header[headers.size()]));
+			final Principal userPrincipal = httpRequest.getUserPrincipal();
+			if (userPrincipal != null) {
+				logRequest.setPrincipal(userPrincipal.getName());
+			}
+			final Thread currentThread = Thread.currentThread();
+			logRequest.setThreadName(currentThread.getName());
+			logRequest.setThreadId(currentThread.getId());
+		} else {
+			logRequest = null;
+			incrementNbExcludedRequests();
+		}
+
+		try {
+			if (httpRequest.getServletPath().startsWith("/"+cmdRequestName)) {
+				// this is a command request, let's handle it
+				handleFilterCommandRequest(requestURI, httpRequest, response);
+			} else {
 				chain.doFilter(request, response);
-			} catch (final Throwable t) {
-				if (matches) {
-					logRequest.setThrowable(t);
-				}
-				if (t instanceof IOException) {
-					throw (IOException)t;
-				}
-				if (t instanceof ServletException) {
-					throw (ServletException)t;
-				}
-				throw (RuntimeException)t;
-			} finally {
-				if (matches) {
-					logRequest.setAfterProcessedDate(new Date());
-					EventLogManager.getInstance().fire(logRequest);
-				}
+			}
+		} catch (final Throwable t) {
+			if (matches) {
+				logRequest.setThrowable(t);
+			}
+			if (t instanceof IOException) {
+				throw (IOException)t;
+			}
+			if (t instanceof ServletException) {
+				throw (ServletException)t;
+			}
+			throw (RuntimeException)t;
+		} finally {
+			if (matches) {
+				logRequest.setAfterProcessedDate(new Date());
+				EventLogManager.getInstance().fire(logRequest);
 			}
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void handleFilterCommandRequest(final String requestURI, final HttpServletRequest httpRequest, final ServletResponse response) throws IOException {
+		// This is a Command Request, let's execute it
+		final HttpServletResponse httpResponse = ((HttpServletResponse)response);
+		if (requestURI.endsWith(CMD_START_ALL)) {
+			startServices();
+		} else if (requestURI.endsWith(CMD_STOP_ALL)) {
+			stopServices();
+		} else if (requestURI.endsWith(CMD_WRITE_RETENTION_LOG)) {
+			EventLogManager.getInstance().writeRetentionLog();
+		} else if (requestURI.endsWith(CMD_CHANGE_PARAMETERS)) {
+			for(final String parameterName : (List<String>)Collections.list(httpRequest.getParameterNames())) {
+				setParameter(parameterName, httpRequest.getParameter(parameterName));
+			}
+		} else if (requestURI.endsWith(CMD_PRINT_PARAMETERS)) {
+			httpResponse.setStatus(200);
+			final PrintWriter writer = httpResponse.getWriter();
+			for (final Entry<String, ParameterHandler<?, ?>> parameterHandlerEntry : parameterHandlers.entrySet()) {
+				writeParameter(writer, parameterHandlerEntry.getKey(), parameterHandlerEntry.getValue());
+			}
+			return;
+		} else {
+			httpResponse.setStatus(400);
+			httpResponse.getWriter().write("ERROR : Command not understood");
+			return;
+		}
+		httpResponse.setStatus(200);
+		httpResponse.getWriter().write("OK : Command successfully completed");
 	}
 
 	private synchronized void logNbExcludedRequests() {
@@ -244,6 +251,21 @@ public class RequestLogFilter implements Filter {
 		} catch (final IOException e) {
 			log.error("Cannot close EventLog's log", e);
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T, V> void setParameter(final String parameterName, final String value) {
+		final ParameterHandler<T, V> parameterSetter = (ParameterHandler<T, V>) parameterHandlers.get(parameterName);
+		if (parameterSetter == null) {
+			log.warn("init-parameter "+parameterName+" is not handled. Ignoring.");
+		} else {
+			parameterSetter.setFieldStringValue((T) parametersContext.get(parameterSetter.getOwnerClass()), value);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T, V> void writeParameter(final PrintWriter writer, final String parameterName, final ParameterHandler<T, V> parameterHandler) {
+		writer.println(" * "+parameterName+" : "+parameterHandler.getFieldStringValue((T) parametersContext.get(parameterHandler.getOwnerClass())));
 	}
 
 

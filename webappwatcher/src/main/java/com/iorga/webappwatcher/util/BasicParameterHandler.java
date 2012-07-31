@@ -7,29 +7,38 @@ import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
 
-public class BasicParameterSetter<T, V> implements ParameterSetter<T, V> {
+public class BasicParameterHandler<T, V> implements ParameterHandler<T, V> {
 	private final Class<T> ownerClass;
 	private final Class<V> fieldClass;
 	private final String fieldName;
-	private final Method writeMethod;
+	private Method writeMethod;
+	private Method readMethod;
 
-	public BasicParameterSetter(final Class<T> ownerClass, final String fieldName, final Class<V> fieldClass) {
+	public BasicParameterHandler(final Class<T> ownerClass, final String fieldName, final Class<V> fieldClass) {
 		this.ownerClass = ownerClass;
 		this.fieldClass = fieldClass;
 		this.fieldName = fieldName;
-		this.writeMethod = findFieldPropertyDescriptor(fieldName).getWriteMethod();
+		initAccessorMethods(findFieldPropertyDescriptor(fieldName));
 	}
 
 	@SuppressWarnings("unchecked")
-	public BasicParameterSetter(final Class<T> ownerClass, final String fieldName) {
+	public BasicParameterHandler(final Class<T> ownerClass, final String fieldName) {
 		this.ownerClass = ownerClass;
 		this.fieldName = fieldName;
 		final PropertyDescriptor fieldPropertyDescriptor = findFieldPropertyDescriptor(fieldName);
-		this.writeMethod = fieldPropertyDescriptor.getWriteMethod();
 		this.fieldClass = (Class<V>) fieldPropertyDescriptor.getPropertyType();
 
+		initAccessorMethods(fieldPropertyDescriptor);
+	}
+
+	private void initAccessorMethods(final PropertyDescriptor fieldPropertyDescriptor) {
+		this.writeMethod = fieldPropertyDescriptor.getWriteMethod();
+		this.readMethod = fieldPropertyDescriptor.getReadMethod();
 		if (this.writeMethod == null) {
 			throw new IllegalStateException("Couldn't find setter for "+ownerClass+"."+fieldName);
+		}
+		if (this.readMethod == null) {
+			throw new IllegalStateException("Couldn't find getter for "+ownerClass+"."+fieldName);
 		}
 	}
 
@@ -44,7 +53,7 @@ public class BasicParameterSetter<T, V> implements ParameterSetter<T, V> {
 	}
 
 	@Override
-	public void setField(final T owner, final V value) {
+	public void setFieldValue(final T owner, final V value) {
 		try {
 			writeMethod.invoke(owner, value);
 		} catch (final Exception e) {
@@ -53,7 +62,7 @@ public class BasicParameterSetter<T, V> implements ParameterSetter<T, V> {
 	}
 
 	@Override
-	public void setFieldFromString(final T owner, final String value) {
+	public void setFieldStringValue(final T owner, final String value) {
 		if (!isFieldSetIfBlank()) {
 			if (StringUtils.isBlank(value)) {
 				return;
@@ -63,13 +72,31 @@ public class BasicParameterSetter<T, V> implements ParameterSetter<T, V> {
 				return;
 			}
 		}
-		setField(owner, convertFromString(value));
+		setFieldValue(owner, convertFromString(value));
+	}
+
+	@SuppressWarnings("unchecked")
+	protected V convertFromString(final String value) {
+		return (V) ConvertUtils.convert(value, getFieldClass());
+	}
+
+	protected String convertToString(final V value) {
+		return ConvertUtils.convert(value);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public V getFieldValue(final T owner) {
+		try {
+			return (V) readMethod.invoke(owner);
+		} catch (final Exception e) {
+			throw new IllegalArgumentException("Couldn't read "+fieldName+" from "+owner, e);
+		}
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public V convertFromString(final String value) {
-		return (V) ConvertUtils.convert(value, getFieldClass());
+	public String getFieldStringValue(final T owner) {
+		return convertToString(getFieldValue(owner));
 	}
 
 	@Override
