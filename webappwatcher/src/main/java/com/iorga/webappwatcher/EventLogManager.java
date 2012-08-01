@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Date;
@@ -248,8 +249,18 @@ public class EventLogManager {
 				}
 			} else {
 				httpResponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
-				httpResponse.getWriter().write("No log available at the moment.");
+				final PrintWriter writer = httpResponse.getWriter();
+				writer.write("No log available at the moment.");
+				writer.flush();
 			}
+		}
+	}
+
+	public long getEventLogLength() {
+		if (logFile != null && logFile.exists()) {
+			return logFile.length();
+		} else {
+			return -1;
 		}
 	}
 

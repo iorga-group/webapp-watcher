@@ -26,7 +26,7 @@ public final class PatternListParameterHandler<T> extends BasicParameterHandler<
 	@Override
 	protected String convertToString(final List<Pattern> value) {
 		if (value == null) {
-			return null;
+			return "";
 		}
 		final StringBuilder stringBuilder = new StringBuilder();
 		boolean first = true;
