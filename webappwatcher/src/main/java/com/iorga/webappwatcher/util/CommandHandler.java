@@ -4,6 +4,11 @@ import java.util.Map;
 
 public interface CommandHandler {
 	String getCommandName();
-	void execute(Map<Class<?>, Object> commandContext) throws Exception;
+	/**
+	 * @param commandContext
+	 * @return <code>true</code> if the command handled the response, <code>false</code> otherwise
+	 * @throws Exception
+	 */
+	boolean execute(Map<Class<?>, Object> commandContext) throws Exception;
 	String toHtml(Map<Class<?>, Object> commandContext);
 }

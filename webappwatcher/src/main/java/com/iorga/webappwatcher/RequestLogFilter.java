@@ -72,31 +72,35 @@ public class RequestLogFilter implements Filter {
 	static {
 		addCommandHandler(new BasicCommandHandler("stopAll") {
 			@Override
-			public void execute(final Map<Class<?>, Object> commandContext) {
+			public boolean execute(final Map<Class<?>, Object> commandContext) {
 				getRequestLogFilter(commandContext).stopServices();
+				return false;
 			}
 		});
 		addCommandHandler(new BasicCommandHandler("startAll") {
 			@Override
-			public void execute(final Map<Class<?>, Object> commandContext) {
+			public boolean execute(final Map<Class<?>, Object> commandContext) {
 				getRequestLogFilter(commandContext).startServices();
+				return false;
 			}
 		});
 		addCommandHandler(new BasicCommandHandler("writeRetentionLog") {
 			@Override
-			public void execute(final Map<Class<?>, Object> commandContext) throws IOException {
+			public boolean execute(final Map<Class<?>, Object> commandContext) throws IOException {
 				EventLogManager.getInstance().writeRetentionLog();
+				return false;
 			}
 		});
 		addCommandHandler(new BasicCommandHandler("changeParameters") {
 			@SuppressWarnings("unchecked")
 			@Override
-			public void execute(final Map<Class<?>, Object> commandContext) throws IOException {
+			public boolean execute(final Map<Class<?>, Object> commandContext) throws IOException {
 				final HttpServletRequest request = getHttpServletRequest(commandContext);
 				final RequestLogFilter logFilter = getRequestLogFilter(commandContext);
 				for(final String parameterName : (List<String>)Collections.list(request.getParameterNames())) {
 					logFilter.setParameter(parameterName, request.getParameter(parameterName));
 				}
+				return false;
 			}
 			@Override
 			protected String toHtmlInForm(final Map<Class<?>, Object> commandContext) {
@@ -114,7 +118,7 @@ public class RequestLogFilter implements Filter {
 		});
 		addCommandHandler(new BasicCommandHandler("printParameters") {
 			@Override
-			public void execute(final Map<Class<?>, Object> commandContext) throws IOException {
+			public boolean execute(final Map<Class<?>, Object> commandContext) throws IOException {
 				final HttpServletResponse response = getHttpServletResponse(commandContext);
 				final RequestLogFilter logFilter = getRequestLogFilter(commandContext);
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -122,29 +126,30 @@ public class RequestLogFilter implements Filter {
 				for (final Entry<String, ParameterHandler<?, ?>> parameterHandlerEntry : parameterHandlers.entrySet()) {
 					logFilter.writeParameter(writer, parameterHandlerEntry.getKey(), parameterHandlerEntry.getValue());
 				}
-				writer.flush();
+				return true;
 			}
 		});
 		addCommandHandler(new BasicCommandHandler("downloadEventLog") {
 			@Override
-			public void execute(final Map<Class<?>, Object> commandContext) throws IOException {
+			public boolean execute(final Map<Class<?>, Object> commandContext) throws IOException {
 				final HttpServletResponse response = getHttpServletResponse(commandContext);
 				EventLogManager.getInstance().writeEventLogToHttpServletResponse(response);
+				return true;
 			}
 		});
 		addCommandHandler(new BasicCommandHandler("printInfos") {
 			@Override
-			public void execute(final Map<Class<?>, Object> commandContext) throws IOException {
+			public boolean execute(final Map<Class<?>, Object> commandContext) throws IOException {
 				final HttpServletResponse response = getHttpServletResponse(commandContext);
 				response.setStatus(HttpServletResponse.SC_OK);
 				final PrintWriter writer = response.getWriter();
 				writer.println(" * eventLogLength = "+EventLogManager.getInstance().getEventLogLength());
-				writer.flush();
+				return true;
 			}
 		});
 		addCommandHandler(new BasicCommandHandler("printHtmlCommands") {
 			@Override
-			public void execute(final Map<Class<?>, Object> commandContext) throws IOException {
+			public boolean execute(final Map<Class<?>, Object> commandContext) throws IOException {
 				final HttpServletResponse response = getHttpServletResponse(commandContext);
 				response.setStatus(HttpServletResponse.SC_OK);
 				response.setContentType("text/html");
@@ -154,7 +159,7 @@ public class RequestLogFilter implements Filter {
 					writer.print(commandHandler.toHtml(commandContext));
 				}
 				writer.print("</body></html>");
-				writer.flush();
+				return true;
 			}
 		}, true);
 	}
@@ -301,19 +306,21 @@ public class RequestLogFilter implements Filter {
 		commandContext.put(HttpServletRequest.class, httpRequest);
 		commandContext.put(HttpServletResponse.class, httpResponse);
 		final String commandName = StringUtils.substringAfterLast(requestURI, "/");
+		final boolean commandHandledResponse;
 		if (StringUtils.isEmpty(commandName) || commandName.equals(getCmdRequestName())) {
 			// Here is the default command : nothing after last /, or no last /
-			defaultCommandHandler.execute(commandContext);
+			commandHandledResponse = defaultCommandHandler.execute(commandContext);
 		} else {
 			final CommandHandler commandHandler = commandHandlers.get(commandName);
 			if (commandHandler != null) {
-				commandHandler.execute(commandContext);
+				commandHandledResponse = commandHandler.execute(commandContext);
 			} else {
+				commandHandledResponse = true;
 				httpResponse.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 				httpResponse.getWriter().write("ERROR : Command not understood");
 			}
 		}
-		if (!httpResponse.isCommitted()) {
+		if (!commandHandledResponse) {
 			httpResponse.setStatus(HttpServletResponse.SC_OK);
 			httpResponse.getWriter().write("OK : Command successfully completed");
 		}
