@@ -91,6 +91,13 @@ public class RequestLogFilter implements Filter {
 				return false;
 			}
 		});
+		addCommandHandler(new BasicCommandHandler("closeRetentionLog") {
+			@Override
+			public boolean execute(final Map<Class<?>, Object> commandContext) throws IOException {
+				EventLogManager.getInstance().closeLog();
+				return false;
+			}
+		});
 		addCommandHandler(new BasicCommandHandler("changeParameters") {
 			@SuppressWarnings("unchecked")
 			@Override
