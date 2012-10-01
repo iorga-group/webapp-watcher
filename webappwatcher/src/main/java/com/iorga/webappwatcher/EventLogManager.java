@@ -19,6 +19,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.time.DateFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tukaani.xz.LZMA2Options;
@@ -115,7 +116,6 @@ public class EventLogManager {
 		public void run() {
 			begin();
 			try {
-				final ObjectOutputStream objectOutputStream = getOrOpenLog();
 				while (!eventLogsQueueToWrite.isEmpty()) {
 					final EventLog eventLog;
 					synchronized (eventLogsQueueToWriteLock) {
@@ -138,10 +138,10 @@ public class EventLogManager {
 						if (log.isDebugEnabled()) {
 							log.debug("Writing "+eventLog.toString());
 						}
-						objectOutputStream.writeObject(eventLog);
+						writeEventLog(eventLog);
 					}
 				}
-				objectOutputStream.flush();
+				getOrOpenLog().flush();
 			} catch (final Exception e) {
 				log.error("Exception while trying to write to EventLog's file", e);
 			} finally {
@@ -177,12 +177,21 @@ public class EventLogManager {
 		retentionLogWriter.start();
 	}
 
-	private ObjectOutputStream getOrOpenLog() throws FileNotFoundException, IOException {
+
+	private void writeEventLog(final EventLog eventLog) throws FileNotFoundException, IOException, InterruptedException {
+		synchronized (objectOutputStreamLogLock) {
+			final ObjectOutputStream objectOutputStream = getOrOpenLog();
+			objectOutputStream.writeObject(eventLog);
+		}
+	}
+
+	private ObjectOutputStream getOrOpenLog() throws FileNotFoundException, IOException, InterruptedException {
 		synchronized (objectOutputStreamLogLock) {
 			if (objectOutputStreamLog == null) {
-				logFile = new File(logPath+EVENT_LOG_FILE_EXTENSION);
-				for (int i = 1 ; logFile.exists() ; i++) {
-					logFile = new File(logPath+"."+i+EVENT_LOG_FILE_EXTENSION);	// Never re-write on a previous log because of "AC" header in an objectOutputStream, see http://stackoverflow.com/questions/1194656/appending-to-an-objectoutputstream/1195078#1195078
+				logFile = generateLogFile();
+				while (logFile.exists()) {
+					Thread.sleep(1);
+					logFile = generateLogFile(); // Never re-write on a previous log because of "AC" header in an objectOutputStream, see http://stackoverflow.com/questions/1194656/appending-to-an-objectoutputstream/1195078#1195078
 				}
 				objectOutputStreamLog = new ObjectOutputStream(
 					new XZOutputStream(new FileOutputStream(logFile), new LZMA2Options()));
@@ -191,12 +200,22 @@ public class EventLogManager {
 		}
 	}
 
+	private File generateLogFile() {
+		return new File(logPath+"."+DateFormatUtils.format(new Date(), "yyyyMMdd-HHmmss-SSS")+EVENT_LOG_FILE_EXTENSION);
+	}
+
 	public void closeLog() throws IOException {
 		synchronized (objectOutputStreamLogLock) {
 			if (objectOutputStreamLog != null) {
-				objectOutputStreamLog.close();
-				objectOutputStreamLog = null;
-				logFile = null;
+				try {
+					objectOutputStreamLog.close();
+				} catch (final IOException e) {
+					throw new IOException("Problem while closing the event log", e);
+				} finally {
+					// Reset fields to null even if there was a problem while closing the log, in order to write to a new one next time
+					objectOutputStreamLog = null;
+					logFile = null;
+				}
 			}
 		}
 	}
