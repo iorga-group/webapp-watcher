@@ -14,7 +14,6 @@
 	</parent>
 
 	<dependencies>
-		<!-- Runtime -->
 		<dependency>
 			<groupId>com.iorga</groupId>
 			<artifactId>webappwatcher</artifactId>
@@ -25,6 +24,11 @@
 			<artifactId>primefaces</artifactId>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<!-- Runtime -->
 		<!-- Provided -->
 		<dependency>
 			<groupId>javax.enterprise</groupId>

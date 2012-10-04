@@ -1,4 +1,4 @@
-package com.iorga.webappwatcher;
+package com.iorga.webappwatcher.watcher;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -9,11 +9,13 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.eventbus.Subscribe;
+import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.DeadLockedThreadsEventLog;
 import com.iorga.webappwatcher.eventlog.DeadLockedThreadsEventLog.Thread;
 import com.iorga.webappwatcher.eventlog.SystemEventLog;
 
-public class CpuCriticalUsageWatcher implements EventLogListener<SystemEventLog> {
+public class CpuCriticalUsageWatcher {
 	private static final Logger log = LoggerFactory.getLogger(CpuCriticalUsageWatcher.class);
 
 	private float criticalCpuUsage = Math.min(70f, 100f / ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors() * 1.5f);	// Default to over 1.5 processors
@@ -23,13 +25,8 @@ public class CpuCriticalUsageWatcher implements EventLogListener<SystemEventLog>
 	private Date lastInfoMessageDate = new Date(0);
 
 
-	@Override
-	public Class<SystemEventLog> getListenedEventLogType() {
-		return SystemEventLog.class;
-	}
-
-	@Override
-	public void onFire(final SystemEventLog eventLog) {
+	@Subscribe
+	public void onEvent(final SystemEventLog eventLog) {
 		if (eventLog.getCpuUsage() > criticalCpuUsage) {
 			try {
 				final Date currentDate = new Date();

@@ -12,9 +12,7 @@
 		<h:outputScript library="js" name="jquery.flot.time.js"/>
 		<h:outputScript library="js" name="jquery.flot.resize.js"/>
 		<h:outputScript library="js" name="jquery.flot.crosshair.js"/>
-		<ui:remove>
-			<h:outputScript library="js" name="jquery.flot.navigate.js"/>
-		</ui:remove>
+		<h:outputScript library="js" name="jquery.flot.navigate.js"/>
 		<h:outputScript library="js" name="analyzer.js"/>
 		<style>
 			html {
@@ -34,9 +32,10 @@
 			<h:form prependId="false">
 				<div id="placeholder" style="width:100%;height:600px;"></div>
 				<p:outputPanel id="infoPanel">
-					Selected date : <h:outputText value="#{analyzerAction.selectedTime}"><f:convertDateTime dateStyle="full"/></h:outputText>
+					Selected date : <h:outputText value="#{analyzerAction.selectedTime}"><f:convertDateTime type="both" dateStyle="full"/></h:outputText>
 					<p:fieldset legend="System" rendered="#{not empty analyzerAction.selectedSystemEventLog}">
 						<ul>
+							<li>Time diff with selected : <h:outputText value="#{analyzerAction.selectedTime - analyzerAction.selectedSystemEventLog.date.time}" style="background-color: ##{analyzerAction.selectedSystemEventLogTimeColor}" /> ms</li>
 							<li>CPU : <h:outputText value="#{analyzerAction.selectedSystemEventLog.cpuUsage}" /> %</li>
 							<li>Heap Memory : <h:outputText value="#{analyzerAction.selectedSystemEventLog.heapMemoryUsed / (1024 * 1024)}"><f:convertNumber maxFractionDigits="2"/></h:outputText> MB</li>
 							<li>Non Heap Memory : <h:outputText value="#{analyzerAction.selectedSystemEventLog.nonHeapMemoryUsed / (1024 * 1024)}"><f:convertNumber maxFractionDigits="2"/></h:outputText> MB</li>
@@ -89,7 +88,7 @@ $(function () {
 	var cpuUsageValues = [#{analyzerAction.cpuUsageJsonValues}];
 	var memoryUsedValues = [#{analyzerAction.memoryUsedJsonValues}];
 	var markings = [#{analyzerAction.markingsJson}];
-	initAnalyzer(cpuUsageValues, memoryUsedValues, markings);
+	initAnalyzer(cpuUsageValues, memoryUsedValues, markings, #{analyzerAction.firstEventLogDate.time}, #{analyzerAction.lastEventLogDate.time}, #{analyzerAction.maxMemoryUsed});
 });
 				</script>
 			</h:form>

@@ -22,6 +22,7 @@
 		<version.commons-io>2.4</version.commons-io>
 		<version.xz>1.1</version.xz>
 		<version.primefaces>3.3.1</version.primefaces>
+		<version.guava>13.0.1</version.guava>
 	</properties>
 
 	<modules>
@@ -155,6 +156,11 @@ encoding/<project>=UTF-8]]>
 				<groupId>org.tukaani</groupId>
 				<artifactId>xz</artifactId>
 				<version>${version.xz}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>${version.guava}</version>
 			</dependency>
 
 			<!-- Provided -->

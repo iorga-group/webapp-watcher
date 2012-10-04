@@ -9,11 +9,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Set;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -26,7 +25,9 @@ import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZInputStream;
 import org.tukaani.xz.XZOutputStream;
 
+import com.google.common.eventbus.EventBus;
 import com.iorga.webappwatcher.eventlog.EventLog;
+import com.iorga.webappwatcher.util.StartableRunnable;
 
 public class EventLogManager {
 	private static final String EVENT_LOG_FILE_EXTENSION = ".ser.xz";
@@ -35,7 +36,6 @@ public class EventLogManager {
 
 	private static EventLogManager instance;
 
-	private final List<EventLogListener<?>> eventLogListeners = new ArrayList<EventLogListener<?>>();
 	/**
 	 * Firsts are older than lasts
 	 */
@@ -52,10 +52,17 @@ public class EventLogManager {
 
 	private File logFile;
 	private ObjectOutputStream objectOutputStreamLog;
+	private XZOutputStream xzOutputStream;
 	private final Object objectOutputStreamLogLock = new Object();
 
 	private static final long SLEEP_BETWEEN_TEST_FOR_EVENT_LOG_TO_COMPLETE_MILLIS = 300;
+	public static final long SLEEP_BEFORE_CLEANING_EVENT_LOGS_QUEUE_MILLIS = 1000;
+
 	private long waitForEventLogToCompleteMillis = 5 * 60 * 1000;	// 5mn by default
+
+	private final EventBus eventBus = new EventBus();
+//	private final Map<Class<? extends EventLogListener>, EventLogListener<?>> eventLogListeners = Maps.newHashMap();
+	private Set<?> eventLogWatchers;
 
 	private EventLogManager() {
 	}
@@ -71,10 +78,6 @@ public class EventLogManager {
 		return instance;
 	}
 
-	public <E extends EventLog> void addEventLogListener(final EventLogListener<E> eventLogListener) {
-		eventLogListeners.add(eventLogListener);	// TODO Quick & Dirty : should be a Map in order to filter with EventLog type
-	}
-
 	public <E extends EventLog> E addEventLog(final Class<E> eventLogClass) {
 		final E eventLog;
 		synchronized (eventLogsQueueLock) {
@@ -87,30 +90,51 @@ public class EventLogManager {
 			}
 
 			eventLogsQueue.addLast(eventLog);
-			// Remove all logs which are too old for retention
-			final Date currentDate = new Date();
-			for (EventLog firstEventLog = eventLogsQueue.peekFirst() ;
-					firstEventLog != null && (currentDate.getTime() - firstEventLog.getDate().getTime()) > eventLogRetentionMillis;
-					eventLogsQueue.removeFirst()) {
-				firstEventLog = eventLogsQueue.peekFirst();
-			}
 
+			eventLogsQueueCleaner.start(); // start the cleaner to check the potentially too old eventLogs to remove
 		}
 		return eventLog;
 	}
 
-	@SuppressWarnings("unchecked")
 	public <E extends EventLog> void fire(final E systemEventLog) {
 		systemEventLog.setCompleted(true);
-		for (final EventLogListener<?> eventLogListener : eventLogListeners) {
-			if (eventLogListener.getListenedEventLogType().isAssignableFrom(systemEventLog.getClass())) {
-				((EventLogListener<E>)eventLogListener).onFire(systemEventLog);
+		eventBus.post(systemEventLog);
+	}
+
+	private class EventLogsQueueCleaner extends StartableRunnable {
+		@Override
+		public void run() {
+			begin();
+			try {
+				// Wait a small amount of time before trying to clean the eventLogsQueue
+				Thread.sleep(SLEEP_BEFORE_CLEANING_EVENT_LOGS_QUEUE_MILLIS);
+				// Remove all logs which are too old for retention
+				EventLog firstEventLog = eventLogsQueue.peekFirst();
+				while (firstEventLog != null && (new Date().getTime() - firstEventLog.getDate().getTime()) > eventLogRetentionMillis) {
+					// There is one log too old, throw an event which indicates that this eventLog is too old and could be erased if not handled
+					eventBus.post(new EventLogWillBeDeletedEvent(firstEventLog));
+					// now, lock the eventLogsQueue & remove if it's still the first one
+					synchronized (eventLogsQueueLock) {
+						final EventLog newFirstEventLog = eventLogsQueue.peekFirst();
+						if (newFirstEventLog == firstEventLog) {
+							// it's still the same, delete it
+							eventLogsQueue.removeFirst();
+						}
+					}
+					firstEventLog = eventLogsQueue.peekFirst();
+				}
+			} catch (final Exception e) {
+				log.error("Exception while trying to clean the eventLogsQueue", e);
+			} finally {
+				end();
 			}
 		}
 	}
 
-	private class RetentionLogWriter implements Runnable {
-		private boolean running = false;
+	private final EventLogsQueueCleaner eventLogsQueueCleaner = new EventLogsQueueCleaner();
+
+	private class RetentionLogWriter extends StartableRunnable {
+		private EventLogFilter filter;
 
 		@Override
 		public void run() {
@@ -125,7 +149,7 @@ public class EventLogManager {
 							eventLog = null;
 						}
 					}
-					if (eventLog != null) {
+					if (eventLog != null && filter.apply(eventLog)) {
 						// wait for the eventLog to complete
 						final Date beginWaitIsComplete = new Date();
 						while (!eventLog.isCompleted() && (new Date().getTime() - beginWaitIsComplete.getTime()) < waitForEventLogToCompleteMillis) {
@@ -141,7 +165,7 @@ public class EventLogManager {
 						writeEventLog(eventLog);
 					}
 				}
-				getOrOpenLog().flush();
+//				flushLog();
 			} catch (final Exception e) {
 				log.error("Exception while trying to write to EventLog's file", e);
 			} finally {
@@ -149,32 +173,42 @@ public class EventLogManager {
 			}
 		}
 
-		private synchronized void begin() {
-			running  = true;
-		}
-
-		private synchronized void end() {
-			running = false;
-		}
-
-		public synchronized void start() {
-			if (!running) {
-				new Thread(this, RetentionLogWriter.class.getName()).start();
+		public synchronized void start(final EventLogFilter filter) {
+			if (!isRunning() || (isRunning() && this.filter.getPrecedence() < filter.getPrecedence())) {
+				// Only replace the filter if the given one is more important in precedence, or if the logWriter is not running
+				this.filter = filter;
 			}
+			start();
 		}
 	}
 
-	RetentionLogWriter retentionLogWriter = new RetentionLogWriter();
+	private final RetentionLogWriter retentionLogWriter = new RetentionLogWriter();
 
-	public void writeRetentionLog() throws IOException {
-		// TODO écrire les logs avec protobuff https://developers.google.com/protocol-buffers/docs/javatutorial?hl=fr-FR plugin maven dispo ici http://igor-petruk.github.com/protobuf-maven-plugin/usage.html (voir http://stackoverflow.com/a/9358222/535203 )
+	public void writeRetentionLog(final EventLogFilter filter) throws IOException {
+		// FIXME : le filter peut être gardé si le writer tourne encore
 		synchronized (eventLogsQueueLock) {
 			synchronized (eventLogsQueueToWriteLock) {
 				eventLogsQueueToWrite.addAll(eventLogsQueue);
 				eventLogsQueue.clear();
 			}
 		}
-		retentionLogWriter.start();
+		retentionLogWriter.start(filter);
+	}
+
+	private static final EventLogFilter acceptAll = new EventLogFilter() {
+		@Override
+		public boolean apply(final EventLog event) {
+			return true;
+		}
+
+		@Override
+		public int getPrecedence() {
+			return Precedence.HIGH;
+		}
+	};
+
+	public void writeRetentionLog() throws IOException {
+		writeRetentionLog(acceptAll);
 	}
 
 
@@ -193,10 +227,21 @@ public class EventLogManager {
 					Thread.sleep(1);
 					logFile = generateLogFile(); // Never re-write on a previous log because of "AC" header in an objectOutputStream, see http://stackoverflow.com/questions/1194656/appending-to-an-objectoutputstream/1195078#1195078
 				}
-				objectOutputStreamLog = new ObjectOutputStream(
-					new XZOutputStream(new FileOutputStream(logFile), new LZMA2Options()));
+				xzOutputStream = new XZOutputStream(new FileOutputStream(logFile), new LZMA2Options());
+				objectOutputStreamLog = new ObjectOutputStream(xzOutputStream);
 			}
 			return objectOutputStreamLog;
+		}
+	}
+
+	private void flushLog() throws IOException {
+		synchronized (objectOutputStreamLogLock) {
+			if (objectOutputStreamLog != null) {
+				objectOutputStreamLog.flush();
+				// In order for the stream to be correctly
+				xzOutputStream.endBlock();
+				xzOutputStream.flush();
+			}
 		}
 	}
 
@@ -214,6 +259,7 @@ public class EventLogManager {
 				} finally {
 					// Reset fields to null even if there was a problem while closing the log, in order to write to a new one next time
 					objectOutputStreamLog = null;
+					xzOutputStream = null;
 					logFile = null;
 				}
 			}
@@ -224,7 +270,38 @@ public class EventLogManager {
 		return new ObjectInputStream(new XZInputStream(new FileInputStream(file)));
 	}
 
+	public void writeEventLogToHttpServletResponse(final HttpServletResponse httpResponse) throws IOException {
+		synchronized (objectOutputStreamLogLock) {
+			if (objectOutputStreamLog != null) {
+				// before trying to download the log, we must first flush it
+				// warning : as the footer of the xz will never be written, that file will be inconsistent for properly reading it
+				flushLog();
+			}
+			if (logFile != null && logFile.exists()) {
+				httpResponse.setStatus(HttpServletResponse.SC_OK);
+				httpResponse.setContentType("application/x-xz");
+				httpResponse.setHeader("Content-Disposition", "attachment; filename=\""+logFile.getName()+"\"");
+				httpResponse.setContentLength((int) logFile.length());
 
+				final FileInputStream inputStream = new FileInputStream(logFile);
+				final ServletOutputStream outputStream = httpResponse.getOutputStream();
+				try {
+					IOUtils.copy(inputStream, outputStream);
+				} finally {
+					inputStream.close();
+					outputStream.close();
+				}
+			} else {
+				httpResponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
+				final PrintWriter writer = httpResponse.getWriter();
+				writer.write("No log available at the moment.");
+				writer.flush();
+			}
+		}
+	}
+
+	/// Getters / Setters ///
+	////////////////////////
 	public long getEventLogRetentionMillis() {
 		return eventLogRetentionMillis;
 	}
@@ -250,37 +327,30 @@ public class EventLogManager {
 		this.waitForEventLogToCompleteMillis = waitForEventLogToCompleteMillis;
 	}
 
-	public void writeEventLogToHttpServletResponse(final HttpServletResponse httpResponse) throws IOException {
-		synchronized (objectOutputStreamLogLock) {
-			if (logFile != null && logFile.exists()) {
-				httpResponse.setStatus(HttpServletResponse.SC_OK);
-				httpResponse.setContentType("application/x-xz");
-				httpResponse.setHeader("Content-Disposition", "attachment; filename=\""+logFile.getName()+"\"");
-				httpResponse.setContentLength((int) logFile.length());
-
-				final FileInputStream inputStream = new FileInputStream(logFile);
-				final ServletOutputStream outputStream = httpResponse.getOutputStream();
-				try {
-					IOUtils.copy(inputStream, outputStream);
-				} finally {
-					inputStream.close();
-					outputStream.close();
-				}
-			} else {
-				httpResponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
-				final PrintWriter writer = httpResponse.getWriter();
-				writer.write("No log available at the moment.");
-				writer.flush();
-			}
-		}
-	}
-
 	public long getEventLogLength() {
 		if (logFile != null && logFile.exists()) {
 			return logFile.length();
 		} else {
 			return -1;
 		}
+	}
+
+	public void setEventLogWatchers(final Set<?> eventLogWatchers) {
+		// first remove the old ones
+		if (this.eventLogWatchers != null) {
+			for (final Object eventLogWatcher : this.eventLogWatchers) {
+				eventBus.unregister(eventLogWatcher);
+			}
+		}
+		this.eventLogWatchers = eventLogWatchers;
+		// and now register the new ones
+		for (final Object eventLogWatcher : eventLogWatchers) {
+			eventBus.register(eventLogWatcher);
+		}
+	}
+
+	public Set<?> getEventLogWatchers() {
+		return eventLogWatchers;
 	}
 
 }

@@ -28,6 +28,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Sets;
 import com.iorga.webappwatcher.eventlog.ExcludedRequestsEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Header;
@@ -35,9 +36,12 @@ import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
 import com.iorga.webappwatcher.util.BasicCommandHandler;
 import com.iorga.webappwatcher.util.BasicParameterHandler;
 import com.iorga.webappwatcher.util.CommandHandler;
+import com.iorga.webappwatcher.util.InstanceSetParameterHandler;
 import com.iorga.webappwatcher.util.ParameterHandler;
 import com.iorga.webappwatcher.util.PatternListParameterHandler;
 import com.iorga.webappwatcher.util.PatternUtils;
+import com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher;
+import com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher;
 
 
 
@@ -54,6 +58,7 @@ public class RequestLogFilter implements Filter {
 		addParameterHandler("waitForEventLogToCompleteMillis", EventLogManager.class);
 		addParameterHandler("logPath", EventLogManager.class);
 		addParameterHandler("eventLogRetentionMillis", EventLogManager.class);
+		addInstanceSetParameterHandler("eventLogWatchers", EventLogManager.class, Object.class);
 		// initParameter for CpuCriticalUsageWatcher
 		addParameterHandler("criticalCpuUsage", CpuCriticalUsageWatcher.class);
 		addParameterHandler("deadLockThreadsSearchDeltaMillis", CpuCriticalUsageWatcher.class);
@@ -172,9 +177,12 @@ public class RequestLogFilter implements Filter {
 	}
 
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static <T> void addPatternListParameterHandler(final String parameterName, final Class<T> ownerClass) {
-		parameterHandlers.put(parameterName, new PatternListParameterHandler(ownerClass, parameterName));
+		parameterHandlers.put(parameterName, new PatternListParameterHandler<T>(ownerClass, parameterName));
+	}
+
+	private static <T, I> void addInstanceSetParameterHandler(final String parameterName, final Class<T> ownerClass, final Class<I> instancesClass) {
+		parameterHandlers.put(parameterName, new InstanceSetParameterHandler<T, I>(ownerClass, parameterName, parametersContext));
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -205,7 +213,7 @@ public class RequestLogFilter implements Filter {
 	private String cmdRequestName = DEFAULT_CMD_REQUEST_NAME;
 
 	private SystemEventLogger systemEventLogger;
-	private final Map<Class<?>, Object> parametersContext = new HashMap<Class<?>, Object>();
+	private static final Map<Class<?>, Object> parametersContext = new HashMap<Class<?>, Object>();
 
 	private int nbExcludedRequests = 0;
 
@@ -215,12 +223,15 @@ public class RequestLogFilter implements Filter {
 		// Initializing context
 		final CpuCriticalUsageWatcher cpuCriticalUsageWatcher = new CpuCriticalUsageWatcher();
 		parametersContext.put(CpuCriticalUsageWatcher.class, cpuCriticalUsageWatcher);
+		final WriteAllRequestsWatcher writeAllRequestsWatcher = new WriteAllRequestsWatcher();
+		parametersContext.put(WriteAllRequestsWatcher.class, writeAllRequestsWatcher);
 		final EventLogManager eventLogManager = EventLogManager.getInstance();
 		parametersContext.put(EventLogManager.class, eventLogManager);
-		eventLogManager.addEventLogListener(cpuCriticalUsageWatcher);
 		systemEventLogger = new SystemEventLogger();
 		parametersContext.put(SystemEventLogger.class, systemEventLogger);
 		parametersContext.put(RequestLogFilter.class, this);
+		// by default, watch the CPU peaks & write all requests to the log
+		eventLogManager.setEventLogWatchers(Sets.newHashSet(cpuCriticalUsageWatcher, writeAllRequestsWatcher));
 
 		for (final String parameterName : (List<String>)Collections.list(filterConfig.getInitParameterNames())) {
 			final String value = filterConfig.getInitParameter(parameterName);

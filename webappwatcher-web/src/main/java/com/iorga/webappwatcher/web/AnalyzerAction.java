@@ -20,6 +20,8 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.EventLog;
@@ -30,6 +32,8 @@ import com.iorga.webappwatcher.eventlog.SystemEventLog;
 @ViewScoped
 public class AnalyzerAction implements Serializable {
 	private static final long serialVersionUID = 1L;
+
+	private final static Logger log = LoggerFactory.getLogger(AnalyzerAction.class);
 
 //	private Map<String, List<RequestEventLog>> requestEventLogsByPrincipal;
 
@@ -46,11 +50,22 @@ public class AnalyzerAction implements Serializable {
 	private SystemEventLog selectedSystemEventLog;
 	private List<RequestEventLog> selectedRequestEventLogs;
 
+	private Date firstEventLogDate;
+	private Date lastEventLogDate;
+	private long maxMemoryUsed;
+
+	private String selectedSystemEventLogTimeColor;
+
 	@PostConstruct
 	public void readEventLogs() throws IOException, ClassNotFoundException {
 //		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/5.1.0.GA/bin/webappwatcherlog.3.ser");
 //		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/7.1.1.Final/bin/webappwatcherlog.ser");
 //		final FileInputStream inputStream = new FileInputStream("/tmp/webappwatcherlog.ser");
+
+		// Init values
+		firstEventLogDate = null;
+		lastEventLogDate = null;
+		maxMemoryUsed = 0;
 
 		final ObjectInputStream objectInputStream = EventLogManager.readLog("/tmp/webappwatcherlog.ser.xz");
 		try {
@@ -58,16 +73,25 @@ public class AnalyzerAction implements Serializable {
 			final StringBuilder memoryUsedJsonValuesBuilder = new StringBuilder();
 			final Map<String, List<RequestEventLog>> requestEventLogsByPrincipal = new HashMap<String, List<RequestEventLog>>();
 			final LinkedList<SystemEventLog> systemEventLogsSortedByDate = new LinkedList<SystemEventLog>();
+			EventLog lastEventLog = null;
 			try {
 				boolean first = true;
 				requestEventLogsSortedByDate = new LinkedList<RequestEventLog>();
 				EventLog eventLog;
-				while ((eventLog = (EventLog) objectInputStream.readObject()) != null) {
+				while ((eventLog = readEventLog(objectInputStream)) != null) {
 					final Date eventLogDate = eventLog.getDate();
+					if (firstEventLogDate == null) {
+						firstEventLogDate = eventLogDate;
+					}
 					if (eventLog instanceof SystemEventLog) {
 						final SystemEventLog systemEventLog = (SystemEventLog) eventLog;
 						addData(eventLogDate, systemEventLog.getCpuUsage(), cpuUsageJsonValuesBuilder, first);
-						addData(eventLogDate, systemEventLog.getHeapMemoryUsed()+systemEventLog.getNonHeapMemoryUsed(), memoryUsedJsonValuesBuilder, first);
+						final long memoryUsed = systemEventLog.getHeapMemoryUsed()+systemEventLog.getNonHeapMemoryUsed();
+						if (memoryUsed > maxMemoryUsed) {
+							// remember max memory used, for flot max y axis
+							maxMemoryUsed = memoryUsed;
+						}
+						addData(eventLogDate, memoryUsed, memoryUsedJsonValuesBuilder, first);
 						systemEventLogsSortedByDate.add(systemEventLog);
 					}
 					if (eventLog instanceof RequestEventLog) {
@@ -86,6 +110,7 @@ public class AnalyzerAction implements Serializable {
 						// now search
 					}
 					first = false;
+					lastEventLog = eventLog;
 				}
 			} catch (final EOFException e) {
 				// Normal end of the read file
@@ -117,9 +142,14 @@ public class AnalyzerAction implements Serializable {
 			this.markingsJson = markingsJsonBuilder.toString();
 			// putting the systemEventLogsSortedByDate in an array list in order to binary search on it later
 			this.systemEventLogsSortedByDate = new ArrayList<SystemEventLog>(systemEventLogsSortedByDate);
+			this.lastEventLogDate = lastEventLog.getDate();
 		} finally {
 			objectInputStream.close();
 		}
+	}
+
+	private EventLog readEventLog(final ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException {
+		return (EventLog) objectInputStream.readObject();
 	}
 
 	public void updateInfoPanel() {
@@ -137,22 +167,26 @@ public class AnalyzerAction implements Serializable {
 			this.selectedSystemEventLog = systemEventLogsSortedByDate.get(binaryIndex);
 		} else {
 			final int insertionPoint = -binaryIndex - 1;
-			final SystemEventLog n0 = systemEventLogsSortedByDate.get(insertionPoint - 1);
-			if (insertionPoint == systemEventLogsSortedByDate.size()) {
-				// get the last entry because the insertion point is at the end
-				this.selectedSystemEventLog = n0;
-			} else  {
+			if (insertionPoint == 0) {
+				// would be inserted before the 1st element, so the selected is the 1st element
+				this.selectedSystemEventLog = systemEventLogsSortedByDate.get(insertionPoint);
+			} else if (insertionPoint == systemEventLogsSortedByDate.size()) {
+				// would be inserted at the end of the list, so the selected is the last element
+				this.selectedSystemEventLog = systemEventLogsSortedByDate.get(insertionPoint - 1);
+			} else {
+				// must know the eventLog date closer from the selected time
 				final SystemEventLog n = systemEventLogsSortedByDate.get(insertionPoint);
-				if (insertionPoint == 0) {
-					this.selectedSystemEventLog = n;
-				} else if (n0.getDate().getTime() + n.getDate().getTime() <= getSelectedTime() * 2) {
-					// the selected date is near n0 than n
+				final SystemEventLog n0 = systemEventLogsSortedByDate.get(insertionPoint - 1);
+				if (getSelectedTime() - n0.getDate().getTime() <= n.getDate().getTime() - getSelectedTime()) {
+					// the selected date is nearer n0 than n
 					this.selectedSystemEventLog = n0;
 				} else {
 					this.selectedSystemEventLog = n;
 				}
 			}
 		}
+		// Compute the color which symbolizes the difference between the selected time & the selected systemEventLog time : the more it's far, the redder it will be
+		this.selectedSystemEventLogTimeColor = Integer.toHexString(Color.HSBtoRGB(0 /* red hue */, Math.min(1f, Math.abs(getSelectedTime() - this.selectedSystemEventLog.getDate().getTime()) / 4000f), 1f)).substring(2);
 		// Now search for selected request logs
 		this.selectedRequestEventLogs = new LinkedList<RequestEventLog>();
 		final Iterator<RequestEventLog> iterator = requestEventLogsSortedByDate.iterator();
@@ -199,6 +233,22 @@ public class AnalyzerAction implements Serializable {
 
 	public List<RequestEventLog> getSelectedRequestEventLogs() {
 		return selectedRequestEventLogs;
+	}
+
+	public Date getFirstEventLogDate() {
+		return firstEventLogDate;
+	}
+
+	public Date getLastEventLogDate() {
+		return lastEventLogDate;
+	}
+
+	public long getMaxMemoryUsed() {
+		return maxMemoryUsed;
+	}
+
+	public String getSelectedSystemEventLogTimeColor() {
+		return selectedSystemEventLogTimeColor;
 	}
 
 }
