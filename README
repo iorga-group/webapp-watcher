@@ -33,8 +33,11 @@ Voici l'ensemble des configurations du Log Filter :
  * waitForEventLogToCompleteMillis : Nombre de millisecondes que le thread d'écriture du log va attendre un évènement qui n'est pas encore complété. Au delà de cette attente, il est logué avec completed = false. Défaut : 5 * 60 * 1000 (=5mn)
  * logPath : Chemin d'écriture du fichier de log (sans l'extension). Défaut : "webappwatcherlog"
  * eventLogRetentionMillis : Durée de rétention des évènements non encore logués. Quand une demande d'écriture est faite, les logs de toute cette durée sont écris. Défaut : 5 * 60 * 1000 (=5mn)
- * criticalCpuUsage : Seuil d'utilisation CPU (en %, float) au delà duquel vont être logués toute la queue d'évènements. Défaut : 1,5 CPU (donc 100 / nb_CPU * 1,5)
- * deadLockThreadsSearchDeltaMillis : Nombre de milliseconde à attendre avant de tenter une nouvelle détection de DeadLockThread. Défaut : 5 * 60 * 1000 (=5mn)
+ * eventLogWatchers : Liste de nom de classes (séparées par des virgules) de "Watchers", déclencheurs d'écriture du log. Voici les différentes possibilités :
+   * com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher : Observe les pics de CPU, et log après un seuil à configurer (criticalCpuUsage, deadLockThreadsSearchDeltaMillis). Activé par défaut.
+   * com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher : Observe les évènements qui vont être supprimés (car non écrits, et depuis trop longtemps dans la file d'évènements en attente) et demande une écriture des évènements de type "Requête". Activé par défaut. 
+ * criticalCpuUsage : Seuil d'utilisation CPU (en %, float) au delà duquel vont être logués toute la queue d'évènements. Nécessite l'activation du watcher com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher . Défaut : 1,5 CPU (donc 100 / nb_CPU * 1,5)
+ * deadLockThreadsSearchDeltaMillis : Nombre de milliseconde à attendre avant de tenter une nouvelle détection de DeadLockThread. Nécessite l'activation du watcher com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher . Défaut : 5 * 60 * 1000 (=5mn)
  * cpuComputationDeltaMillis : Nombre de milliseconde à attendre avant d'enregistrer un nouveau log de type "SystemEventLog" (c'est à dire les traces CPU / mémoire etc...). Défaut : 300
  * threadNameIncludes : Suite de regexp (séparées par des virgules) pour inclure des stack de Threads en cours (en se basant sur le nom du Thread). Défaut : "http.*"
  * threadNameExcludes : Suite de regexp (séparées par des virgules) pour exclure des stack de Threads en cours (en se basant sur le nom du Thread). Dans l'ordre, threadNameIncludes est testé afin de savoir si le thread va être logué, puis threadNameExcludes est testé si il a passé le premier filtre. Défaut : null.
@@ -53,8 +56,11 @@ Le Log Filter peut être commandé. Voici les commandes :
  * stopAll : Arrêt du système de logging d'évènement (tous ses services)
  * startAll : Démarrage du système de logging d'évènement (tous ses services)
  * writeRetentionLog :  Demande d'écriture des logs
+ * closeRetentionLog : Demande la bonne fermeture du fichier de log (un autre sera créé dès le prochain besoin d'écrire dedans)
  * downloadEventLog : Téléchargement du fichier de log
  * printParameters : Affichage des paramètres et de leur valeurs
+ * printInfos : Affichage d'infos diverses (taille du log actuelle sur le disque par exemple)
  * changeParameters : Changement de paramètres du Log Filter. Chaque paramètre http associé à sa valeur est l'un des paramètres précédemment décrit.
+ * printHtmlCommands : Affichage de toutes ces commandes en HTML avec des boutons permettant de les exécuter
 
 Exemple d'appel : http://localhost:8080/webappwatcher-web/RequestLogFilterCmd/printParameters
