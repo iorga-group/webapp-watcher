@@ -50,6 +50,7 @@ import com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher;
 public class RequestLogFilter implements Filter {
 
 	private static Map<String, ParameterHandler<?, ?>> parameterHandlers = new LinkedHashMap<String, ParameterHandler<?,?>>();
+	private static final Map<Class<?>, Object> parametersContext = new HashMap<Class<?>, Object>();
 
 	static {
 		// initParameter for RequestLogFilter
@@ -221,7 +222,6 @@ public class RequestLogFilter implements Filter {
 	private String cmdRequestName = DEFAULT_CMD_REQUEST_NAME;
 
 	private SystemEventLogger systemEventLogger;
-	private static final Map<Class<?>, Object> parametersContext = new HashMap<Class<?>, Object>();
 
 	private int nbExcludedRequests = 0;
 

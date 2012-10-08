@@ -6,7 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class PatternDurationParameterHandler<T> extends BasicParameterHandler<T, List<PatternDuration>> {
-	private static final Pattern patternDurationPattern = Pattern.compile("(.+):(\\d+),??");
+	private static final Pattern patternDurationPattern = Pattern.compile("(.+?):(\\d+),?");
 
 	public PatternDurationParameterHandler(final Class<T> ownerClass, final String fieldName) {
 		super(ownerClass, fieldName);
