@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.eventbus.Subscribe;
 import com.iorga.webappwatcher.EventLogFilter;
 import com.iorga.webappwatcher.EventLogManager;
-import com.iorga.webappwatcher.EventLogWillBeDeletedEvent;
+import com.iorga.webappwatcher.event.EventLogWillBeDeletedEvent;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 
@@ -29,7 +29,7 @@ public class WriteAllRequestsWatcher {
 
 	@Subscribe
 	public void onEvent(final EventLogWillBeDeletedEvent event) {
-		// There is an eventLog which will be deleted, it's time to write all the eventLogs
+		// There is an eventLog which will be deleted, it's time to write all the request event logs
 		try {
 			EventLogManager.getInstance().writeRetentionLog(onlyRequestLog);
 		} catch (final IOException e) {

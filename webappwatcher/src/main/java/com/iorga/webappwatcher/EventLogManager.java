@@ -26,6 +26,9 @@ import org.tukaani.xz.XZInputStream;
 import org.tukaani.xz.XZOutputStream;
 
 import com.google.common.eventbus.EventBus;
+import com.iorga.webappwatcher.event.EventLogWillBeDeletedEvent;
+import com.iorga.webappwatcher.event.EventLogWillBeIgnoredUncompletedEvent;
+import com.iorga.webappwatcher.event.EventLogWillBeWrittenUncompletedEvent;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.util.StartableRunnable;
 
@@ -56,7 +59,7 @@ public class EventLogManager {
 	private final Object objectOutputStreamLogLock = new Object();
 
 	private static final long SLEEP_BETWEEN_TEST_FOR_EVENT_LOG_TO_COMPLETE_MILLIS = 300;
-	public static final long SLEEP_BEFORE_CLEANING_EVENT_LOGS_QUEUE_MILLIS = 1000;
+	private static final long SLEEP_BEFORE_CLEANING_EVENT_LOGS_QUEUE_MILLIS = 1000;
 
 	private long waitForEventLogToCompleteMillis = 5 * 60 * 1000;	// 5mn by default
 
@@ -97,8 +100,17 @@ public class EventLogManager {
 	}
 
 	public <E extends EventLog> void fire(final E systemEventLog) {
-		systemEventLog.setCompleted(true);
-		eventBus.post(systemEventLog);
+		final boolean alreadyCompleted;
+		synchronized (systemEventLog) {
+			// check if it was already completed or not. Synchronized because multiple threads could want to fire that event
+			alreadyCompleted = systemEventLog.isCompleted();
+			if (!alreadyCompleted) {
+				systemEventLog.setCompleted(true);
+			}
+		}
+		if (!alreadyCompleted) {
+			eventBus.post(systemEventLog);
+		}
 	}
 
 	private class EventLogsQueueCleaner extends StartableRunnable {
@@ -112,7 +124,7 @@ public class EventLogManager {
 				EventLog firstEventLog = eventLogsQueue.peekFirst();
 				while (firstEventLog != null && (new Date().getTime() - firstEventLog.getDate().getTime()) > eventLogRetentionMillis) {
 					// There is one log too old, throw an event which indicates that this eventLog is too old and could be erased if not handled
-					eventBus.post(new EventLogWillBeDeletedEvent(firstEventLog));
+					eventBus.post(new EventLogWillBeDeletedEvent(firstEventLog));	// FIXME : l'instance n'est pas typée !!
 					// now, lock the eventLogsQueue & remove if it's still the first one
 					synchronized (eventLogsQueueLock) {
 						final EventLog newFirstEventLog = eventLogsQueue.peekFirst();
@@ -149,28 +161,43 @@ public class EventLogManager {
 							eventLog = null;
 						}
 					}
-					if (eventLog != null && filter.apply(eventLog)) {
-						// wait for the eventLog to complete
-						final Date beginWaitIsComplete = new Date();
-						while (!eventLog.isCompleted() && (new Date().getTime() - beginWaitIsComplete.getTime()) < waitForEventLogToCompleteMillis) {
-							Thread.sleep(SLEEP_BETWEEN_TEST_FOR_EVENT_LOG_TO_COMPLETE_MILLIS);
+					if (eventLog != null) {
+						if (eventLog.isCompleted()) {
+							if (filter.apply(eventLog)) {
+								// completed event log, accepted by the filter, let's write it
+								writeEventLog(eventLog);
+							} else {
+								// not accepted, let's ignore it
+							}
+						} else {
+							if (filter.apply(eventLog)) {
+								// uncompleted event log, accepted, we have to wait for it & finally write it
+								waitAndWriteEventLog(eventLog);
+							} else {
+								// uncompleted event log, rejected by filter, let's alert watchers
+								eventBus.post(new EventLogWillBeIgnoredUncompletedEvent(eventLog));
+								// perhaps some watchers changed the filter with that event, so let's test it again
+								if (filter.apply(eventLog)) {
+									// uncompleted event log, accepted, we have to wait for it & finally write it
+									waitAndWriteEventLog(eventLog);
+								} else {
+									// not accepted, let's ignore it
+								}
+							}
 						}
-						// that log is completed, let's write it in the log file
-						if (!eventLog.isCompleted()) {
-							log.info("Writing not completed "+eventLog.getClass().getName()+"#"+eventLog.getDate().getTime());
-						}
-						if (log.isDebugEnabled()) {
-							log.debug("Writing "+eventLog.toString());
-						}
-						writeEventLog(eventLog);
 					}
 				}
-//				flushLog();
 			} catch (final Exception e) {
 				log.error("Exception while trying to write to EventLog's file", e);
 			} finally {
 				end();
 			}
+		}
+
+		@Override
+		protected synchronized void end() {
+			super.end();
+			this.filter = null; // reset the filter so that the next "start" could replace it
 		}
 
 		public synchronized void start(final EventLogFilter filter) {
@@ -184,17 +211,6 @@ public class EventLogManager {
 
 	private final RetentionLogWriter retentionLogWriter = new RetentionLogWriter();
 
-	public void writeRetentionLog(final EventLogFilter filter) throws IOException {
-		// FIXME : le filter peut être gardé si le writer tourne encore
-		synchronized (eventLogsQueueLock) {
-			synchronized (eventLogsQueueToWriteLock) {
-				eventLogsQueueToWrite.addAll(eventLogsQueue);
-				eventLogsQueue.clear();
-			}
-		}
-		retentionLogWriter.start(filter);
-	}
-
 	private static final EventLogFilter acceptAll = new EventLogFilter() {
 		@Override
 		public boolean apply(final EventLog event) {
@@ -207,12 +223,49 @@ public class EventLogManager {
 		}
 	};
 
+	/**
+	 * Write all the retetion log.
+	 * @throws IOException
+	 */
 	public void writeRetentionLog() throws IOException {
 		writeRetentionLog(acceptAll);
 	}
 
+	/**
+	 * Write the retetion log, but only the eventLogs accepted by the given filter
+	 * @param filter
+	 * @throws IOException
+	 */
+	public void writeRetentionLog(final EventLogFilter filter) throws IOException {
+		// TODO : le filter peut être gardé si le writer tourne encore
+		synchronized (eventLogsQueueLock) {
+			synchronized (eventLogsQueueToWriteLock) {
+				eventLogsQueueToWrite.addAll(eventLogsQueue);
+				eventLogsQueue.clear();
+			}
+		}
+		retentionLogWriter.start(filter);
+	}
+
+	private void waitAndWriteEventLog(final EventLog eventLog) throws InterruptedException, FileNotFoundException, IOException {
+		// wait for the eventLog to complete as the filter accepts it
+		final Date beginWaitIsComplete = new Date();
+		while (!eventLog.isCompleted() && (new Date().getTime() - beginWaitIsComplete.getTime()) < waitForEventLogToCompleteMillis) {
+			Thread.sleep(SLEEP_BETWEEN_TEST_FOR_EVENT_LOG_TO_COMPLETE_MILLIS);
+		}
+		if (!eventLog.isCompleted()) {
+			eventBus.post(new EventLogWillBeWrittenUncompletedEvent(eventLog));
+		}
+		writeEventLog(eventLog);
+	}
 
 	private void writeEventLog(final EventLog eventLog) throws FileNotFoundException, IOException, InterruptedException {
+		if (!eventLog.isCompleted()) {
+			log.info("Writing not completed "+eventLog.getClass().getName()+"#"+eventLog.getDate().getTime());
+		}
+		if (log.isDebugEnabled()) {
+			log.debug("Writing "+eventLog.toString());
+		}
 		synchronized (objectOutputStreamLogLock) {
 			final ObjectOutputStream objectOutputStream = getOrOpenLog();
 			objectOutputStream.writeObject(eventLog);

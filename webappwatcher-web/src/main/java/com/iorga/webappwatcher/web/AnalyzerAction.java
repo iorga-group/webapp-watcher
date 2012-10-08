@@ -20,8 +20,6 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.EventLog;
@@ -32,10 +30,6 @@ import com.iorga.webappwatcher.eventlog.SystemEventLog;
 @ViewScoped
 public class AnalyzerAction implements Serializable {
 	private static final long serialVersionUID = 1L;
-
-	private final static Logger log = LoggerFactory.getLogger(AnalyzerAction.class);
-
-//	private Map<String, List<RequestEventLog>> requestEventLogsByPrincipal;
 
 	private String cpuUsageJsonValues;
 
@@ -58,10 +52,6 @@ public class AnalyzerAction implements Serializable {
 
 	@PostConstruct
 	public void readEventLogs() throws IOException, ClassNotFoundException {
-//		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/5.1.0.GA/bin/webappwatcherlog.3.ser");
-//		final FileInputStream inputStream = new FileInputStream("/home/aogier/Applications/JBoss/7.1.1.Final/bin/webappwatcherlog.ser");
-//		final FileInputStream inputStream = new FileInputStream("/tmp/webappwatcherlog.ser");
-
 		// Init values
 		firstEventLogDate = null;
 		lastEventLogDate = null;

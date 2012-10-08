@@ -38,9 +38,11 @@ import com.iorga.webappwatcher.util.BasicParameterHandler;
 import com.iorga.webappwatcher.util.CommandHandler;
 import com.iorga.webappwatcher.util.InstanceSetParameterHandler;
 import com.iorga.webappwatcher.util.ParameterHandler;
+import com.iorga.webappwatcher.util.PatternDurationParameterHandler;
 import com.iorga.webappwatcher.util.PatternListParameterHandler;
 import com.iorga.webappwatcher.util.PatternUtils;
 import com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher;
+import com.iorga.webappwatcher.watcher.RequestDurationWatcher;
 import com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher;
 
 
@@ -62,6 +64,8 @@ public class RequestLogFilter implements Filter {
 		// initParameter for CpuCriticalUsageWatcher
 		addParameterHandler("criticalCpuUsage", CpuCriticalUsageWatcher.class);
 		addParameterHandler("deadLockThreadsSearchDeltaMillis", CpuCriticalUsageWatcher.class);
+		// initParameter for RequestDurationWatcher
+		addPatternDurationListParameterHandler("requestDurationLimits", RequestDurationWatcher.class);
 		// initParameter for SystemEventLogger
 		addParameterHandler("cpuComputationDeltaMillis", SystemEventLogger.class);
 		addPatternListParameterHandler("threadNameIncludes", SystemEventLogger.class);
@@ -181,6 +185,10 @@ public class RequestLogFilter implements Filter {
 		parameterHandlers.put(parameterName, new PatternListParameterHandler<T>(ownerClass, parameterName));
 	}
 
+	private static <T> void addPatternDurationListParameterHandler(final String parameterName, final Class<T> ownerClass) {
+		parameterHandlers.put(parameterName, new PatternDurationParameterHandler<T>(ownerClass, parameterName));
+	}
+
 	private static <T, I> void addInstanceSetParameterHandler(final String parameterName, final Class<T> ownerClass, final Class<I> instancesClass) {
 		parameterHandlers.put(parameterName, new InstanceSetParameterHandler<T, I>(ownerClass, parameterName, parametersContext));
 	}
@@ -225,13 +233,15 @@ public class RequestLogFilter implements Filter {
 		parametersContext.put(CpuCriticalUsageWatcher.class, cpuCriticalUsageWatcher);
 		final WriteAllRequestsWatcher writeAllRequestsWatcher = new WriteAllRequestsWatcher();
 		parametersContext.put(WriteAllRequestsWatcher.class, writeAllRequestsWatcher);
+		final RequestDurationWatcher requestDurationWatcher = new RequestDurationWatcher();
+		parametersContext.put(RequestDurationWatcher.class, requestDurationWatcher);
 		final EventLogManager eventLogManager = EventLogManager.getInstance();
 		parametersContext.put(EventLogManager.class, eventLogManager);
 		systemEventLogger = new SystemEventLogger();
 		parametersContext.put(SystemEventLogger.class, systemEventLogger);
 		parametersContext.put(RequestLogFilter.class, this);
-		// by default, watch the CPU peaks & write all requests to the log
-		eventLogManager.setEventLogWatchers(Sets.newHashSet(cpuCriticalUsageWatcher, writeAllRequestsWatcher));
+		// by default, watch the CPU peaks, the request duration & write all requests to the log
+		eventLogManager.setEventLogWatchers(Sets.newHashSet(cpuCriticalUsageWatcher, requestDurationWatcher, writeAllRequestsWatcher));
 
 		for (final String parameterName : (List<String>)Collections.list(filterConfig.getInitParameterNames())) {
 			final String value = filterConfig.getInitParameter(parameterName);

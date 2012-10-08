@@ -1,7 +1,10 @@
-package com.iorga.webappwatcher;
+package com.iorga.webappwatcher.event;
 
 import com.iorga.webappwatcher.eventlog.EventLog;
 
+/**
+ * Indicates that the event will be deleted if it's still into the retention queue after the event is handled
+ */
 public class EventLogWillBeDeletedEvent {
 
 	private EventLog eventLog;
