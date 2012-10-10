@@ -3,13 +3,13 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>webappwatcher-web</artifactId>
-	<version>0.1.0-SNAPSHOT</version>
+	<version>1.0.0-SNAPSHOT</version>
 	<name>Iorga Webapp Watcher - Web UI</name>
 	<packaging>war</packaging>
 	<parent>
 		<groupId>com.iorga</groupId>
 		<artifactId>webappwatcher-parent</artifactId>
-		<version>1.1.1</version>
+		<version>1.2.0</version>
 		<relativePath>../webappwatcher-parent/pom.xml</relativePath>
 	</parent>
 
@@ -23,10 +23,6 @@
 			<groupId>org.primefaces</groupId>
 			<artifactId>primefaces</artifactId>
 			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
 		</dependency>
 		<!-- Runtime -->
 		<!-- Provided -->
@@ -43,6 +39,16 @@
 			<artifactId>jboss-servlet-api_3.0_spec</artifactId>
 			<version>1.0.2.Final</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<scope>provided</scope>	<!-- With JBoss 7, that dependency is provided -->
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<scope>provided</scope>	<!-- With JBoss 7, that dependency is provided -->
 		</dependency>
 
 	</dependencies>

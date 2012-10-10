@@ -1,7 +1,8 @@
 Pour surveiller une application web :
  1) Mettre webwatcher-*.jar dans le WEB-INF/lib/
  2) Ajouter également dans le WEB-INF/lib les dépendances (jar) présentes dans le paquet de distribution, dans le dossier lib/ (attention de ne pas ajouter des jars qui seraient déjà présents dans d'autres versions)
- 3) Rajouter cette configuration dans le WEB-INF/web.xml (juste après le filtre permettant de mettre le "Principal" - l'utilisateur connecté - dans la HttpServletRequest, c'est à dire, après le filtre de Seam par exemple) :
+ 3) Ajouter également dans le WEB-INF/lib les dépendances (jar) présentes dans le dossier optional-jar (log4j* et slf4j*) si le serveur d'appli ne fournit pas ces jar
+ 4) Rajouter cette configuration dans le WEB-INF/web.xml (juste après le filtre permettant de mettre le "Principal" - l'utilisateur connecté - dans la HttpServletRequest, c'est à dire, après le filtre de Seam par exemple) :
 	<filter>
 		<filter-name>Log Filter</filter-name>
 		<filter-class>com.iorga.webappwatcher.RequestLogFilter</filter-class>
