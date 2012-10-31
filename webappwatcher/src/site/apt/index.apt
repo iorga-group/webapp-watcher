@@ -72,21 +72,23 @@ Configuration
 *-------------------+--------------+---------+------------------------------------+
 | <<<requestDurationLimits>>> | Suite de regexp (séparées par des virgules) associant une requête avec un temps limite (en millisecondes) au dela duquel une demande d'écriture complète des logs sera faite. Pour chaque regexp, préciser le temps après un "<<<:>>>", par exemple : "<<<.*/login\\.xhtml:60000>>>" pour loguer quand l'appel à la page "<<<login.xhtml>>>" dépasse 60 secondes. | <<<.*\\.xhtml:30000>>> | <<<com.iorga.webappwatcher.watcher.RequestDurationWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
-| <<<mailSmtpHost>>> | Adresse du serveur SMTP pour les mails d'alerte | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+| <<<writingEventsCooldown>>> | Suite de regexp (séparées par des virgules) associant un type de watcher avec un temps de "cooldown" (en secondes) représentant le temps minimum d'attente d'envoie de mail entre deux mails. Pour chaque regexp, préciser le nom du watcher, puis <<<#>>> suivi de l'évènement, puis un temps après un "<<<:>>>", par exemple : "<<<.*RequestDurationWatcher:60>>>" pour envoyer un mail à chaque demande d'écriture de log de la part du <<<RequestDurationWatcher>>> en attendant 1mn minimum entre chaque mail. Une valeur de <<<-1>>> empêche tout mail pour les watchers correspondants. | <<<.*RequestLogFilter#.*:-1, .*WriteAllRequestsWatcher#.*:-1, .*:1800>>> | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
-| <<<mailSmtpPort>>> | Port du serveur SMTP pour les mails d'alerte | 25 | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+| <<<mailSmtpHost>>> | Adresse du serveur SMTP pour les mails d'alerte | vide | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
-| <<<mailSmtpAuth>>> | Faut-il une authentification au serveur SMTP ? | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+| <<<mailSmtpPort>>> | Port du serveur SMTP pour les mails d'alerte | 25 | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
-| <<<mailSmtpUsername>>> | Nom d'utilisateur lors de l'authentification auprès du serveur SMTP | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+| <<<mailSmtpAuth>>> | Faut-il une authentification au serveur SMTP ? | vide | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
-| <<<mailSmtpPassword>>> | Mot de passe de l'utilisateur pour l'authentification auprès du serveur SMTP | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+| <<<mailSmtpUsername>>> | Nom d'utilisateur lors de l'authentification auprès du serveur SMTP | vide | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
-| <<<mailSmtpSecurityType>>> | Type d'authentification auprès du serveur SMTP. La valeur peut être "SSL" ou "TLS". | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+| <<<mailSmtpPassword>>> | Mot de passe de l'utilisateur pour l'authentification auprès du serveur SMTP | vide | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
-| <<<mailFrom>>> | Adresse email source des mails d'alerte | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+| <<<mailSmtpSecurityType>>> | Type d'authentification auprès du serveur SMTP. La valeur peut être "<<<SSL>>>" ou "<<<TLS>>>". | vide | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
-| <<<mailTo>>> | Adresse(s) email de destination des mails d'alerte | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+| <<<mailFrom>>> | Adresse email source des mails d'alerte | vide | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailTo>>> | Adresse(s) email de destination des mails d'alerte | vide | <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
 
   Ces configurations doivent être déclarées de cette manière :
@@ -101,6 +103,8 @@ Configuration
 		</init-param>
 	</filter>
 +----------------------------------------------------------------------------
+
+  Elles peuvent également être déclarées dans un fichier <<<webappwatcher.properties>>> à placer dans <<<WEB-INF/classes/>>>. Ce fichier est un fichier "properties" classique, type "clée=valeur" avec possibilité de commenter des lignes avec "#".
 
 * Le paramètre <<<eventLogWatchers>>>
 
