@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
@@ -243,9 +244,20 @@ public class RequestLogFilter implements Filter {
 		// by default, watch the CPU peaks, the request duration & write all requests to the log
 		eventLogManager.setEventLogWatchers(Sets.newHashSet(cpuCriticalUsageWatcher, requestDurationWatcher, writeAllRequestsWatcher));
 
+		// Reading web.xml filterConfig init-params
 		for (final String parameterName : (List<String>)Collections.list(filterConfig.getInitParameterNames())) {
 			final String value = filterConfig.getInitParameter(parameterName);
 			setParameter(parameterName, value);
+		}
+		// Reading "webappwatcher.properties" parameters
+		try {
+			final Properties properties = new Properties();
+			properties.load(getClass().getClassLoader().getResourceAsStream("webappwatcher.properties"));
+			for (final Entry<Object, Object> property : properties.entrySet()) {
+				setParameter((String)property.getKey(), (String)property.getValue());
+			}
+		} catch (final IOException e) {
+			throw new ServletException("Problem while reading webappwatcher.properties file", e);
 		}
 
 		startServices();
