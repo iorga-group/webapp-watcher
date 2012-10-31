@@ -1,10 +1,12 @@
 package com.iorga.webappwatcher.watcher;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.Subscribe;
 import com.iorga.webappwatcher.EventLogFilter;
 import com.iorga.webappwatcher.EventLogManager;
@@ -31,7 +33,9 @@ public class WriteAllRequestsWatcher {
 	public void onEvent(final EventLogWillBeDeletedEvent event) {
 		// There is an eventLog which will be deleted, it's time to write all the request event logs
 		try {
-			EventLogManager.getInstance().writeRetentionLog(onlyRequestLog);
+			final Map<String, Object> context = Maps.newHashMap();
+			context.put("eventLogWillBeDeletedEvent", event);
+			EventLogManager.getInstance().writeRetentionLog(onlyRequestLog, this.getClass(), "avoidEventLogToBeDeleted", context);
 		} catch (final IOException e) {
 			log.error("Problem while writing retention log", e);
 		}

@@ -43,35 +43,51 @@ Configuration
 
   Voici l'ensemble des configurations du Log Filter :
 
-*------------------*-------------*--------*
-|| Nom du paramètre || Description || Défaut |
-*------------------+-------------+--------+
+*-------------------*--------------*---------*------------------------------------*
+|| Nom du paramètre || Description || Défaut || Dépend de l'activation du watcher |
+*-------------------+--------------+---------+------------------------------------+
 | <<<requestNameIncludes>>> | Suite de regexp (séparées par des virgules) pour inclure des requêtes (en se basant sur leur <<<requestURI>>>). | <<<.*\\.xhtml>>> |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
 | <<<requestNameExcludes>>> | Suite de regexp (séparées par des virgules) pour exclure des requêtes (en se basant sur leur <<<requestURI>>>). Dans l'ordre, <<<requestNameIncludes>>> est testé afin de savoir si la requête est incluse, puis <<<requestNameExcludes>>> est testé si elle a passé le premier filtre | vide |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
 | <<<cmdRequestName>>> | Nom de la commande permettant de requêter le filtre. | <<<RequestLogFilterCmd>>> |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
 | <<<waitForEventLogToCompleteMillis>>> | Nombre de millisecondes que le thread d'écriture du log va attendre un évènement qui n'est pas encore complété. Au delà de cette attente, il est logué avec <<<completed = false>>> | 5 * 60 * 1000 (=5mn) |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
 | <<<logPath>>> | Chemin d'écriture du fichier de log (sans l'extension). | <<<webappwatcherlog>>> |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
 | <<<eventLogRetentionMillis>>> | Durée de rétention des évènements non encore logués. Quand une demande d'écriture est faite, les logs de toute cette durée sont écris. | 5 * 60 * 1000 (=5mn) |
-*------------------+-------------+--------+
-| <<<eventLogWatchers>>> | Liste de nom de classes (séparées par des virgules) de "Watchers", déclencheurs d'écriture du log. Voir {{{Le_paramtre_eventLogWatchers}le paragraphe dédié}}. | <<<com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher,com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher,com.iorga.webappwatcher.watcher.RequestDurationWatcher>>> |
-*------------------+-------------+--------+
-| <<<criticalCpuUsage>>> | Seuil d'utilisation CPU (en %, float) au delà duquel vont être logués toute la queue d'évènements. Nécessite l'activation du watcher <<<com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher>>>. | 1,5 CPU (donc 100 / nb_CPU * 1,5) |
-*------------------+-------------+--------+
-| <<<deadLockThreadsSearchDeltaMillis>>> | Nombre de milliseconde à attendre avant de tenter une nouvelle détection de DeadLockThread. Nécessite l'activation du watcher <<<com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher>>>. | 5 * 60 * 1000 (=5mn) |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
+| <<<eventLogWatchers>>> | Liste de nom de classes (séparées par des virgules) de "Watchers", déclencheurs d'écriture du log. Voir {{{Le_paramtre_eventLogWatchers}le paragraphe dédié}}. | <<<com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher, com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher, com.iorga.webappwatcher.watcher.RequestDurationWatcher, com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
+*-------------------+--------------+---------+------------------------------------+
+| <<<criticalCpuUsage>>> | Seuil d'utilisation CPU (en %, float) au delà duquel vont être logués toute la queue d'évènements. | 1,5 CPU (donc 100 / nb_CPU * 1,5) | <<<com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher>>> |
+*-------------------+--------------+---------+------------------------------------+
+| <<<deadLockThreadsSearchDeltaMillis>>> | Nombre de milliseconde à attendre avant de tenter une nouvelle détection de DeadLockThread. | 5 * 60 * 1000 (=5mn) | <<<com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher>>> |
+*-------------------+--------------+---------+------------------------------------+
 | <<<cpuComputationDeltaMillis>>> | Nombre de milliseconde à attendre avant d'enregistrer un nouveau log de type "SystemEventLog" (c'est à dire les traces CPU / mémoire etc...). | <<<300>>> |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
 | <<<threadNameIncludes>>> | Suite de regexp (séparées par des virgules) pour inclure des stack de Threads en cours (en se basant sur le nom du Thread). | <<<http.*>>> |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
 | <<<threadNameExcludes>>> | Suite de regexp (séparées par des virgules) pour exclure des stack de Threads en cours (en se basant sur le nom du Thread). Dans l'ordre, <<<threadNameIncludes>>> est testé afin de savoir si le thread va être logué, puis <<<threadNameExcludes>>> est testé si il a passé le premier filtre. | vide |
-*------------------+-------------+--------+
-| <<<requestDurationLimits>>> | Suite de regexp (séparées par des virgules) associant une requête avec un temps limite (en millisecondes) au dela duquel une demande d'écriture complète des logs sera faite (nécessite l'activation du <<<RequestDurationWatcher>>>). Pour chaque regexp, préciser le temps après un "<<<:>>>", par exemple : "<<<.*/login\\.xhtml:60000>>>" pour loguer quand l'appel à la page "<<<login.xhtml>>>" dépasse 60 secondes. | <<<.*\\.xhtml:30000>>> |
-*------------------+-------------+--------+
+*-------------------+--------------+---------+------------------------------------+
+| <<<requestDurationLimits>>> | Suite de regexp (séparées par des virgules) associant une requête avec un temps limite (en millisecondes) au dela duquel une demande d'écriture complète des logs sera faite. Pour chaque regexp, préciser le temps après un "<<<:>>>", par exemple : "<<<.*/login\\.xhtml:60000>>>" pour loguer quand l'appel à la page "<<<login.xhtml>>>" dépasse 60 secondes. | <<<.*\\.xhtml:30000>>> | <<<com.iorga.webappwatcher.watcher.RequestDurationWatcher>>> |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailSmtpHost>>> | Adresse du serveur SMTP pour les mails d'alerte | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailSmtpPort>>> | Port du serveur SMTP pour les mails d'alerte | 25 | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailSmtpAuth>>> | Faut-il une authentification au serveur SMTP ? | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailSmtpUsername>>> | Nom d'utilisateur lors de l'authentification auprès du serveur SMTP | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailSmtpPassword>>> | Mot de passe de l'utilisateur pour l'authentification auprès du serveur SMTP | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailSmtpSecurityType>>> | Type d'authentification auprès du serveur SMTP. La valeur peut être "SSL" ou "TLS". | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailFrom>>> | Adresse email source des mails d'alerte | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+*-------------------+--------------+---------+------------------------------------+
+| <<<mailTo>>> | Adresse(s) email de destination des mails d'alerte | vide | com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher |
+*-------------------+--------------+---------+------------------------------------+
 
   Ces configurations doivent être déclarées de cette manière :
 
@@ -96,6 +112,8 @@ Configuration
 | <<<com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher>>> | Observe les évènements qui vont être supprimés (car non écrits, et depuis trop longtemps dans la file d'évènements en attente) et demande une écriture des évènements de type "Requête". Activé par défaut. |
 *---------------------------------------------------------------+---------+
 | <<<com.iorga.webappwatcher.watcher.RequestDurationWatcher>>> | Observe les requêtes trop longues (ou qui dépassent la taille d'attente du log de rétention — <<<waitForEventLogToCompleteMillis>>> —) et demande une écriture de tous les évènements en cas de dépassement. Utilise le paramètres <<<requestDurationLimits>>>. Activé par défaut. |
+*---------------------------------------------------------------+---------+
+| <<<com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> | Observe les écritures des logs, et alerte par mail si configuré |
 *---------------------------------------------------------------+---------+
 
 Commande en direct du "Log Filter"

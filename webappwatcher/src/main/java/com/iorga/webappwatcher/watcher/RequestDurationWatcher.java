@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.Subscribe;
 import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.event.EventLogWillBeDeletedEvent;
@@ -50,12 +52,18 @@ public class RequestDurationWatcher {
 				if (patternDuration.getPattern().matcher(requestEventLog.getRequestURI()).matches()) {
 					// the pattern matches, let's test the duration
 					final Date afterProcessedDate = requestEventLog.getAfterProcessedDate();
+					final Map<String, Object> context = Maps.newHashMap();
+					context.put("requestEventLog", requestEventLog);
 					if (afterProcessedDate == null) {
 						// no end date, it's a peak, let's write all the logs
-						EventLogManager.getInstance().writeRetentionLog();
-					} else if (afterProcessedDate.getTime() - requestEventLog.getDate().getTime() >= patternDuration.getDuration()) {
-						// the request was too long, let's write all the logs
-						EventLogManager.getInstance().writeRetentionLog();
+						EventLogManager.getInstance().writeRetentionLog(this.getClass(), "requestWithoutEndDate", context);
+					} else {
+						final Integer patternDurationDuration = patternDuration.getDuration();
+						if (afterProcessedDate.getTime() - requestEventLog.getDate().getTime() >= patternDurationDuration) {
+							// the request was too long, let's write all the logs
+							context.put("patternDurationDuration", patternDurationDuration);
+							EventLogManager.getInstance().writeRetentionLog(this.getClass(), "requestTooLong", context);
+						}
 					}
 					break;	// stops on first match
 				}

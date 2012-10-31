@@ -44,6 +44,7 @@ import com.iorga.webappwatcher.util.PatternListParameterHandler;
 import com.iorga.webappwatcher.util.PatternUtils;
 import com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher;
 import com.iorga.webappwatcher.watcher.RequestDurationWatcher;
+import com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher;
 import com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher;
 
 
@@ -66,6 +67,17 @@ public class RequestLogFilter implements Filter {
 		// initParameter for CpuCriticalUsageWatcher
 		addParameterHandler("criticalCpuUsage", CpuCriticalUsageWatcher.class);
 		addParameterHandler("deadLockThreadsSearchDeltaMillis", CpuCriticalUsageWatcher.class);
+		// initParameter for RetentionLogWritingWatcher
+		addPatternDurationListParameterHandler("writingEventsCooldown", RetentionLogWritingWatcher.class);
+		addParameterHandler("mailSmtpHost", RetentionLogWritingWatcher.class);
+		addParameterHandler("mailSmtpPort", RetentionLogWritingWatcher.class);
+		addParameterHandler("mailSmtpAuth", RetentionLogWritingWatcher.class);
+		addParameterHandler("mailSmtpUsername", RetentionLogWritingWatcher.class);
+		addParameterHandler("mailSmtpPassword", RetentionLogWritingWatcher.class);
+		addParameterHandler("mailSmtpSecurityType", RetentionLogWritingWatcher.class);
+		addParameterHandler("mailFrom", RetentionLogWritingWatcher.class);
+		addParameterHandler("mailTo", RetentionLogWritingWatcher.class);
+
 		// initParameter for RequestDurationWatcher
 		addPatternDurationListParameterHandler("requestDurationLimits", RequestDurationWatcher.class);
 		// initParameter for SystemEventLogger
@@ -98,7 +110,7 @@ public class RequestLogFilter implements Filter {
 		addCommandHandler(new BasicCommandHandler("writeRetentionLog") {
 			@Override
 			public boolean execute(final Map<Class<?>, Object> commandContext) throws IOException {
-				EventLogManager.getInstance().writeRetentionLog();
+				EventLogManager.getInstance().writeRetentionLog(RequestLogFilter.class, "writeRetentionLogRequest", null);
 				return false;
 			}
 		});
@@ -236,13 +248,15 @@ public class RequestLogFilter implements Filter {
 		parametersContext.put(WriteAllRequestsWatcher.class, writeAllRequestsWatcher);
 		final RequestDurationWatcher requestDurationWatcher = new RequestDurationWatcher();
 		parametersContext.put(RequestDurationWatcher.class, requestDurationWatcher);
+		final RetentionLogWritingWatcher retentionLogWritingWatcher = new RetentionLogWritingWatcher();
+		parametersContext.put(RetentionLogWritingWatcher.class, retentionLogWritingWatcher);
 		final EventLogManager eventLogManager = EventLogManager.getInstance();
 		parametersContext.put(EventLogManager.class, eventLogManager);
 		systemEventLogger = new SystemEventLogger();
 		parametersContext.put(SystemEventLogger.class, systemEventLogger);
 		parametersContext.put(RequestLogFilter.class, this);
 		// by default, watch the CPU peaks, the request duration & write all requests to the log
-		eventLogManager.setEventLogWatchers(Sets.newHashSet(cpuCriticalUsageWatcher, requestDurationWatcher, writeAllRequestsWatcher));
+		eventLogManager.setEventLogWatchers(Sets.newHashSet(cpuCriticalUsageWatcher, requestDurationWatcher, writeAllRequestsWatcher, retentionLogWritingWatcher));
 
 		// Reading web.xml filterConfig init-params
 		for (final String parameterName : (List<String>)Collections.list(filterConfig.getInitParameterNames())) {

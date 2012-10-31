@@ -47,5 +47,14 @@
 				<include>org.slf4j:slf4j-log4j12</include>
 			</includes>
 		</dependencySet>
+		<dependencySet>
+			<outputDirectory>optional-lib</outputDirectory>
+			<scope>provided</scope>
+			<useProjectArtifact>false</useProjectArtifact>
+			<useTransitiveFiltering>true</useTransitiveFiltering>
+			<includes>
+				<include>javax.mail:mail</include>
+			</includes>
+		</dependencySet>
 	</dependencySets>
 </assembly>

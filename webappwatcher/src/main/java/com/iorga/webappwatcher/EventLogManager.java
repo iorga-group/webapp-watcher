@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.util.Date;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.ServletOutputStream;
@@ -29,6 +30,7 @@ import com.google.common.eventbus.EventBus;
 import com.iorga.webappwatcher.event.EventLogWillBeDeletedEvent;
 import com.iorga.webappwatcher.event.EventLogWillBeIgnoredUncompletedEvent;
 import com.iorga.webappwatcher.event.EventLogWillBeWrittenUncompletedEvent;
+import com.iorga.webappwatcher.event.RetentionLogWritingEvent;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.util.StartableRunnable;
 
@@ -227,8 +229,8 @@ public class EventLogManager {
 	 * Write all the retetion log.
 	 * @throws IOException
 	 */
-	public void writeRetentionLog() throws IOException {
-		writeRetentionLog(acceptAll);
+	public void writeRetentionLog(final Class<?> source, final String reason, final Map<String, Object> context) throws IOException {
+		writeRetentionLog(acceptAll, source, reason, context);
 	}
 
 	/**
@@ -236,7 +238,7 @@ public class EventLogManager {
 	 * @param filter
 	 * @throws IOException
 	 */
-	public void writeRetentionLog(final EventLogFilter filter) throws IOException {
+	public void writeRetentionLog(final EventLogFilter filter, final Class<?> source, final String reason, final Map<String, Object> context) throws IOException {
 		// TODO : le filter peut être gardé si le writer tourne encore
 		synchronized (eventLogsQueueLock) {
 			synchronized (eventLogsQueueToWriteLock) {
@@ -245,6 +247,7 @@ public class EventLogManager {
 			}
 		}
 		retentionLogWriter.start(filter);
+		eventBus.post(new RetentionLogWritingEvent(source, reason, context));
 	}
 
 	private void waitAndWriteEventLog(final EventLog eventLog) throws InterruptedException, FileNotFoundException, IOException {

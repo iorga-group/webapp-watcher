@@ -5,10 +5,12 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.Date;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.Subscribe;
 import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.DeadLockedThreadsEventLog;
@@ -21,14 +23,16 @@ public class CpuCriticalUsageWatcher {
 	private float criticalCpuUsage = Math.min(70f, 100f / ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors() * 1.5f);	// Default to over 1.5 processors
 	private long deadLockThreadsSearchDeltaMillis = 5 * 60 * 1000; // Default every 5mn
 	private Date lastDeadLockThreadsSearchDate = new Date(0);
-	private final long infoMessagesDeltaMillis = 5 * 60 * 1000; // Displays info messages every 5mn at least
-	private Date lastInfoMessageDate = new Date(0);
 
 
 	@Subscribe
 	public void onEvent(final SystemEventLog eventLog) {
 		if (eventLog.getCpuUsage() > criticalCpuUsage) {
 			try {
+				final Map<String, Object> context = Maps.newHashMap();
+				context.put("systemEventLog", eventLog);
+				context.put("criticalCpuUsage", criticalCpuUsage);
+
 				final Date currentDate = new Date();
 				final EventLogManager eventLogManager = EventLogManager.getInstance();
 				if (currentDate.getTime() - lastDeadLockThreadsSearchDate.getTime() > deadLockThreadsSearchDeltaMillis) {
@@ -48,11 +52,7 @@ public class CpuCriticalUsageWatcher {
 					lastDeadLockThreadsSearchDate = currentDate;
 				}
 
-				if (currentDate.getTime() - lastInfoMessageDate.getTime() > infoMessagesDeltaMillis) {
-					log.info("CPU usage "+eventLog.getCpuUsage()+" over "+criticalCpuUsage+", writing log. (That message will not be repeated for "+infoMessagesDeltaMillis+" millis)");
-					lastInfoMessageDate = currentDate;
-				}
-				eventLogManager.writeRetentionLog();
+				eventLogManager.writeRetentionLog(this.getClass(), "criticalCpuUsage", context);
 			} catch (final IOException e) {
 				log.warn("Couldn't write retention log", e);
 			}
