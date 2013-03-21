@@ -42,7 +42,7 @@ rm -rf $NEW_RELEASE_DIR
 
 # Copie des sources
 mkdir -p $NEW_RELEASE_DIR/src
-cp -r * .git $NEW_RELEASE_DIR/src/
+cp -r * .git* $NEW_RELEASE_DIR/src/
 
 # Build de la distribution
 cd webappwatcher-parent

@@ -1,6 +1,7 @@
 package com.iorga.webappwatcher;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -230,7 +231,7 @@ public class RequestLogFilter implements Filter {
 	{
 		// By default, we only log .seam
 		requestNameIncludes = new ArrayList<Pattern>();
-		requestNameIncludes.add(Pattern.compile(".*\\.seam"));
+		requestNameIncludes.add(Pattern.compile(".*\\.xhtml"));
 	}
 	private String cmdRequestName = DEFAULT_CMD_REQUEST_NAME;
 
@@ -266,9 +267,12 @@ public class RequestLogFilter implements Filter {
 		// Reading "webappwatcher.properties" parameters
 		try {
 			final Properties properties = new Properties();
-			properties.load(getClass().getClassLoader().getResourceAsStream("webappwatcher.properties"));
-			for (final Entry<Object, Object> property : properties.entrySet()) {
-				setParameter((String)property.getKey(), (String)property.getValue());
+			final InputStream propertiesStream = getClass().getClassLoader().getResourceAsStream("webappwatcher.properties");
+			if (propertiesStream != null) {
+				properties.load(propertiesStream);
+				for (final Entry<Object, Object> property : properties.entrySet()) {
+					setParameter((String)property.getKey(), (String)property.getValue());
+				}
 			}
 		} catch (final IOException e) {
 			throw new ServletException("Problem while reading webappwatcher.properties file", e);

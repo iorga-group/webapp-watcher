@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.iorga</groupId>
 	<artifactId>webappwatcher-parent</artifactId>
-	<version>1.3.0-SNAPSHOT</version>
+	<version>1.3.1-SNAPSHOT</version>
 	<name>Iorga Webapp Watcher - Parent</name>
 	<packaging>pom</packaging>
 
@@ -14,14 +14,15 @@
 		<java.version>1.6</java.version>
 
 		<!-- module version -->
-		<version.webappwatcher>1.3.0-SNAPSHOT</version.webappwatcher>
+		<version.webappwatcher>1.3.1-SNAPSHOT</version.webappwatcher>
 
 		<!-- artifact versions -->
 		<version.commons-lang>2.4</version.commons-lang>
 		<version.commons-beanutils>1.8.3</version.commons-beanutils>
 		<version.commons-io>2.4</version.commons-io>
+		<version.commons-fileupload>1.2.2</version.commons-fileupload>
 		<version.xz>1.1</version.xz>
-		<version.primefaces>3.3.1</version.primefaces>
+		<version.primefaces>3.5</version.primefaces>
 		<version.guava>13.0.1</version.guava>
 		<version.slf4j>1.7.1</version.slf4j>
 		<version.mail>1.4.4</version.mail>
@@ -213,6 +214,11 @@ encoding/<project>=UTF-8]]>
 				<artifactId>mail</artifactId>
 				<version>${version.mail}</version>
 				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>commons-fileupload</groupId>
+				<artifactId>commons-fileupload</artifactId>
+				<version>${version.commons-fileupload}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

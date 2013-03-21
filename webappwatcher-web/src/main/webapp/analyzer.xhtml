@@ -28,10 +28,25 @@
 	</h:head>
 	
 	<h:body>
-		<p:panel header="Analyzer">
-			<h:form prependId="false">
+		<p:panel id="analyzer" header="Analyzer">
+			<h:form enctype="multipart/form-data" rendered="#{not analyzerAction.retentionLogLoaded}">
+				<p:fileUpload
+					fileUploadListener="#{analyzerAction.handleFileUpload}"
+					mode="advanced"
+					update=":analyzer"
+					showButtons="false"
+					auto="true"
+					allowTypes="/(\.|\/)(xz)$/" />
+			</h:form>
+			<h:form prependId="false" rendered="#{analyzerAction.retentionLogLoaded}">
 				<div id="placeholder" style="width:100%;height:600px;"></div>
 				<p:outputPanel id="infoPanel">
+					Limit to :
+					<p:selectOneMenu value="#{analyzerAction.selectedPrincipal}" filter="true" filterMatchMode="contains">
+						<f:selectItem itemLabel="All" itemValue="#{analyzerAction.allPrincipalValue}"/>
+						<f:selectItems value="#{analyzerAction.colorsByPrincipal.entrySet()}" var="entry" itemLabel="#{entry.key}" itemValue="#{entry.key}" />
+					</p:selectOneMenu>
+					<h:commandButton value="Submit" action="#{analyzerAction.changeSelectedPrincipal}"/>  
 					Selected date : <h:outputText value="#{analyzerAction.selectedTime}"><f:convertDateTime type="both" dateStyle="full"/></h:outputText>
 					<p:fieldset legend="System" rendered="#{not empty analyzerAction.selectedSystemEventLog}">
 						<ul>
@@ -83,6 +98,7 @@
 				</p:outputPanel>
 				<p:remoteCommand name="updateInfoPanel" update="infoPanel" action="#{analyzerAction.updateInfoPanel}" />
 				<h:inputHidden id="selectedTime" value="#{analyzerAction.selectedTime}" />
+				
 				<script id="source">
 $(function () {
 	var cpuUsageValues = [#{analyzerAction.cpuUsageJsonValues}];

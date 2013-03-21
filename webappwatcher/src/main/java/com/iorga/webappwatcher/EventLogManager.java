@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
@@ -322,8 +323,12 @@ public class EventLogManager {
 		}
 	}
 
+	public static ObjectInputStream readLog(final InputStream inputStream) throws FileNotFoundException, IOException {
+		return new ObjectInputStream(new XZInputStream(inputStream));
+	}
+
 	public static ObjectInputStream readLog(final String file) throws FileNotFoundException, IOException {
-		return new ObjectInputStream(new XZInputStream(new FileInputStream(file)));
+		return readLog(new FileInputStream(file));
 	}
 
 	public void writeEventLogToHttpServletResponse(final HttpServletResponse httpResponse) throws IOException {
