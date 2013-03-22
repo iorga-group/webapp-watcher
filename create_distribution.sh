@@ -3,7 +3,7 @@ set -x
 
 TAG=$1
 
-TMP_DIR=/tmp/webappwatcher-distribution
+TMP_DIR=/dev/shm/webappwatcher-distribution
 
 # Create trap function which will stops the program if there is a problem with sub-calls
 trap catch_error ERR;
@@ -36,7 +36,7 @@ fi
 find . -name "pom.xml" -exec sed -i "s/-SNAPSHOT//g" {} \;
 
 NEW_RELEASE_DIR_NAME=webappwatcher-distribution-${TAG#webappwatcher-}
-NEW_RELEASE_DIR=/tmp/$NEW_RELEASE_DIR_NAME
+NEW_RELEASE_DIR=/dev/shm/$NEW_RELEASE_DIR_NAME
 
 rm -rf $NEW_RELEASE_DIR
 
