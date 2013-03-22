@@ -34,10 +34,11 @@ import com.iorga.webappwatcher.eventlog.SystemEventLog;
 @ViewScoped
 public class AnalyzerAction implements Serializable {
 	private static final float PRINCIPALS_PANEL_MARGIN = 0.5f;
-
 	private static final float PRINCIPALS_PANEL_HEIGHT = 19f;
-
 	private static final String ALL_PRINCIPAL_VALUE = "All";
+
+	private static final int NULL_AFTER_PROCESS_DATE_DURATION_MILLIS = 45 * 1000;
+
 
 	private static final long serialVersionUID = 1L;
 
@@ -151,13 +152,18 @@ public class AnalyzerAction implements Serializable {
 				// Spec to write = { color: '#121212', lineWidth: 2, xaxis: { from: 1343292820699, to: 1343292895085 }, yaxis: { from: -1, to: -1} }
 				final float y = -PRINCIPALS_PANEL_HEIGHT * (currentPrincipal+1f) / (nbPrincipals+1f) - PRINCIPALS_PANEL_MARGIN; // 19 = 20% (y axis) - 0.5 margin top & bottom
 				for (final RequestEventLog requestEventLog : requestsForOnePrincipal) {
+					Date afterProcessedDate = requestEventLog.getAfterProcessedDate();
+					if (afterProcessedDate == null) {
+						System.err.println("AfterProcessedDate null, render date + "+NULL_AFTER_PROCESS_DATE_DURATION_MILLIS+" millis for "+requestEventLog);
+						afterProcessedDate = new Date(requestEventLog.getDate().getTime() + NULL_AFTER_PROCESS_DATE_DURATION_MILLIS);
+					}
 					if (!first) {
 						markingsJsonBuilder.append(",");
 					} else {
 						first = false;
 					}
 					markingsJsonBuilder.append("{color:'#").append(color).append("',")
-						.append("xaxis:{from:").append(requestEventLog.getDate().getTime()).append(",to:").append(requestEventLog.getAfterProcessedDate().getTime()).append("},")
+						.append("xaxis:{from:").append(requestEventLog.getDate().getTime()).append(",to:").append(afterProcessedDate.getTime()).append("},")
 						.append("yaxis:{from:").append(y).append(",to:").append(y).append("}}");
 				}
 				currentPrincipal++;
@@ -221,7 +227,11 @@ public class AnalyzerAction implements Serializable {
 		final Iterator<RequestEventLog> iterator = requestEventLogsSortedByDate.iterator();
 		RequestEventLog request = null;
 		while (iterator.hasNext() && (request = iterator.next()).getDate().getTime() <= getSelectedTime()) {
-			if (request.getAfterProcessedDate().getTime() >= getSelectedTime() && (ALL_PRINCIPAL_VALUE.equals(selectedPrincipal) || request.getPrincipal().equals(selectedPrincipal))) {
+			Date afterProcessedDate = request.getAfterProcessedDate();
+			if (afterProcessedDate == null) {
+				afterProcessedDate = new Date(request.getDate().getTime() + NULL_AFTER_PROCESS_DATE_DURATION_MILLIS);
+			}
+			if (afterProcessedDate.getTime() >= getSelectedTime() && (ALL_PRINCIPAL_VALUE.equals(selectedPrincipal) || request.getPrincipal().equals(selectedPrincipal))) {
 				// End date is after the selected time, the request is selected
 				selectedRequestEventLogs.add(request);
 			}
@@ -274,25 +284,30 @@ public class AnalyzerAction implements Serializable {
 						// Search for the system log, discarding previous logs
 						systemEventLogIterator = systemEventLogsSortedByDate.iterator();
 						while (systemEventLogIterator.hasNext() && (currentSystemLog = systemEventLogIterator.next()).getDate().getTime() < firstEventLogDate.getTime()) {}
-						firstSystemLog = handleSystemEventLog(currentSystemLog, markingsJsonBuilder, markingsJsonBuilder, firstSystemLog);
+						firstSystemLog = handleSystemEventLog(currentSystemLog, cpuUsageJsonValuesBuilder, memoryUsedJsonValuesBuilder, firstSystemLog);
 					}
 				}
-				lastEventLogDate = requestEventLog.getAfterProcessedDate();
-				if (systemEventLogsSortedByDate.size() > 0) {
+				if (systemEventLogsSortedByDate.size() > 0 && lastEventLogDate != null) {
 					// Search for the system log until the end of the request
 					while (systemEventLogIterator.hasNext() && (currentSystemLog = systemEventLogIterator.next()).getDate().getTime() < lastEventLogDate.getTime()) {
-						firstSystemLog = handleSystemEventLog(currentSystemLog, markingsJsonBuilder, markingsJsonBuilder, firstSystemLog);
+						firstSystemLog = handleSystemEventLog(currentSystemLog, cpuUsageJsonValuesBuilder, memoryUsedJsonValuesBuilder, firstSystemLog);
 					}
 				}
+				Date afterProcessedDate = requestEventLog.getAfterProcessedDate();
+				if (afterProcessedDate == null) {
+					System.err.println("AfterProcessedDate null, render date + "+NULL_AFTER_PROCESS_DATE_DURATION_MILLIS+" millis for "+requestEventLog);
+					afterProcessedDate = new Date(requestEventLog.getDate().getTime() + NULL_AFTER_PROCESS_DATE_DURATION_MILLIS);
+				}
+				// Appending the current request
 				if (!firstRequestEventLog) {
 					markingsJsonBuilder.append(",");
 				} else {
 					firstRequestEventLog = false;
 				}
-				// Appending the current request
 				markingsJsonBuilder.append("{color:'#").append(selectedColor).append("',")
-					.append("xaxis:{from:").append(requestEventLog.getDate().getTime()).append(",to:").append(requestEventLog.getAfterProcessedDate().getTime()).append("},")
+					.append("xaxis:{from:").append(requestEventLog.getDate().getTime()).append(",to:").append(afterProcessedDate.getTime()).append("},")
 					.append("yaxis:{from:").append(selectedPrincipalPanelY).append(",to:").append(selectedPrincipalPanelY).append("}}");
+				lastEventLogDate = afterProcessedDate;
 			}
 
 			cpuUsageJsonValues = cpuUsageJsonValuesBuilder.toString();
@@ -306,9 +321,9 @@ public class AnalyzerAction implements Serializable {
 			final Date eventLogDate = systemEventLog.getDate();
 			addData(eventLogDate, systemEventLog.getCpuUsage(), cpuUsageJsonValuesBuilder, firstSystemLog);
 			final long memoryUsed = systemEventLog.getHeapMemoryUsed()+systemEventLog.getNonHeapMemoryUsed();
-			if (memoryUsed > allMaxMemoryUsed) {
+			if (memoryUsed > maxMemoryUsed) {
 				// remember max memory used, for flot max y axis
-				allMaxMemoryUsed = memoryUsed;
+				maxMemoryUsed = memoryUsed;
 			}
 			addData(eventLogDate, memoryUsed, memoryUsedJsonValuesBuilder, firstSystemLog);
 			return false;
