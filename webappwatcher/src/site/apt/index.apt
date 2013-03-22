@@ -147,3 +147,7 @@ Commande en direct du "Log Filter"
 *-----------+---------+
 
   Exemple d'appel : {{{http://localhost:8080/webappwatcher-web/RequestLogFilterCmd/printParameters}http://localhost:8080/webappwatcher-web/RequestLogFilterCmd/<<printParameters>>}}
+
+Application web
+
+  L'application web permettant de lire les fichiers de logs générés par webappwatcher est accessible à l'adresse  {{{http://localhost:8080/webappwatcher-web/analyzer.xhtml}http://localhost:8080/webappwatcher-web/<<analyzer.xhtml>>}}
