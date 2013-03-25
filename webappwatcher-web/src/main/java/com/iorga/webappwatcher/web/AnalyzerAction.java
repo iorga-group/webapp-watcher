@@ -24,6 +24,7 @@ import javax.faces.event.ValueChangeEvent;
 
 import org.apache.commons.lang.StringUtils;
 import org.primefaces.event.FileUploadEvent;
+import org.tukaani.xz.CorruptedInputException;
 
 import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.EventLog;
@@ -182,7 +183,12 @@ public class AnalyzerAction implements Serializable {
 	}
 
 	private EventLog readEventLog(final ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException {
-		return (EventLog) objectInputStream.readObject();
+		try {
+			return (EventLog) objectInputStream.readObject();
+		} catch (final CorruptedInputException e) {
+			e.printStackTrace(System.err);
+			return null;
+		}
 	}
 
 	public void updateInfoPanel() {
