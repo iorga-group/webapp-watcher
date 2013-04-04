@@ -1,0 +1,46 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:c="http://java.sun.com/jsp/jstl/core"
+	xmlns:fn="http://java.sun.com/jsp/jstl/functions"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:p="http://primefaces.org/ui">
+
+	<h:head>
+		<title>WebappWatcher - Statistics</title>
+		<style>
+			html {
+				height: 100%;
+			}
+			body {
+				height: 100%;
+			}
+			.stackElement {
+				margin-left: 10px;
+			}
+		</style>
+	</h:head>
+	
+	<h:body>
+		<p:panel id="statistics" header="Statistics">
+			<p:fieldset legend="Files">
+				<ul>
+					<ui:repeat var="uploadedFile" value="#{statisticsAction.uploadedFiles}">
+						<li>#{uploadedFile.fileName}</li>
+					</ui:repeat>
+				</ul>
+				<h:form>
+					<h:commandButton value="Extract duration stats" action="#{statisticsAction.extractDurationStats}"/>  
+				</h:form>
+			</p:fieldset>
+			<h:form enctype="multipart/form-data">
+				<p:fileUpload
+					fileUploadListener="#{statisticsAction.handleFileUpload}"
+					mode="advanced"
+					update=":statistics"
+					auto="true"
+					allowTypes="/(\.|\/)(xz)$/" />
+			</h:form>
+		</p:panel>
+	</h:body>
+</html>

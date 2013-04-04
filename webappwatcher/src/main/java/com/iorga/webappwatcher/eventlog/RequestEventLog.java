@@ -72,6 +72,10 @@ public class RequestEventLog extends EventLog {
 		super();
 	}
 
+	public Long getDurationMillis() {
+		return afterProcessedDate != null ? afterProcessedDate.getTime() - getDate().getTime() : null;
+	}
+
 	public String getRequestURI() {
 		return requestURI;
 	}

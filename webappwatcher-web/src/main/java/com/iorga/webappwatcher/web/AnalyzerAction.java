@@ -73,11 +73,6 @@ public class AnalyzerAction implements Serializable {
 
 	private boolean retentionLogLoaded = false;
 
-//	@PostConstruct
-//	public void init() throws FileNotFoundException, IOException, ClassNotFoundException {
-//		readEventLogs(new FileInputStream("/home/aogier/Téléchargements/webappwatcherlog.20130320-224448-535.ser.xz"));
-//	}
-
 	public void handleFileUpload(final FileUploadEvent event) throws IOException, ClassNotFoundException {
 		readEventLogs(event.getFile().getInputstream());
 	}

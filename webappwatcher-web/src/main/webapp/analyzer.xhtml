@@ -79,6 +79,7 @@
 									<li>Thread : #{requestEvent.threadName} (#{requestEvent.threadId})</li>
 									<li>Start date : #{requestEvent.date}</li>
 									<li>End date : #{requestEvent.afterProcessedDate}</li>
+									<li>Duration : #{requestEvent.durationMillis}</li>
 									<li>Parameters</li>
 									<ul>
 										<ui:repeat var="parameter" value="#{requestEvent.parameters}">
