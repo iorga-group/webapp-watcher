@@ -17,6 +17,8 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -24,9 +26,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZInputStream;
-import org.tukaani.xz.XZOutputStream;
 
 import com.google.common.eventbus.EventBus;
 import com.iorga.webappwatcher.event.EventLogWillBeDeletedEvent;
@@ -310,8 +310,8 @@ public class EventLogManager {
 				try {
 					objectOutputStreamLog.close();
 					rafLog.close();
-					final File xzFile = new File(logFile.getAbsolutePath()+".xz");
-					final OutputStream outputStream = new XZOutputStream(new FileOutputStream(xzFile), new LZMA2Options());
+					final File gzFile = new File(logFile.getAbsolutePath()+".gz");
+					final OutputStream outputStream = new GZIPOutputStream(new FileOutputStream(gzFile));
 					final InputStream inputStream = new FileInputStream(logFile);
 					IOUtils.copy(inputStream, outputStream);
 					inputStream.close();
@@ -329,12 +329,21 @@ public class EventLogManager {
 		}
 	}
 
-	public static ObjectInputStream readLog(final InputStream inputStream) throws FileNotFoundException, IOException {
-		return new ObjectInputStream(new XZInputStream(inputStream));
+	public static ObjectInputStream readLog(final InputStream inputStream, final String fileName) throws FileNotFoundException, IOException {
+		final InputStream zipInputStream;
+		if (fileName.endsWith(".gz")) {
+			zipInputStream = new GZIPInputStream(inputStream);
+		} else if (fileName.endsWith(".xz")) {
+			zipInputStream = new XZInputStream(inputStream);
+		} else {
+			throw new IllegalArgumentException("Filename must end with .gz or .xz");
+		}
+		return new ObjectInputStream(zipInputStream);
 	}
 
-	public static ObjectInputStream readLog(final String file) throws FileNotFoundException, IOException {
-		return readLog(new FileInputStream(file));
+	public static ObjectInputStream readLog(final String filePath) throws FileNotFoundException, IOException {
+		final File file = new File(filePath);
+		return readLog(new FileInputStream(file), file.getName());
 	}
 
 	public void writeEventLogToHttpServletResponse(final HttpServletResponse httpResponse) throws IOException {
@@ -346,22 +355,17 @@ public class EventLogManager {
 			}
 			if (logFile != null && logFile.exists()) {
 				httpResponse.setStatus(HttpServletResponse.SC_OK);
-				httpResponse.setContentType("application/x-xz");
-				httpResponse.setHeader("Content-Disposition", "attachment; filename=\""+logFile.getName()+".xz\"");
-				httpResponse.setContentLength((int) logFile.length());
+				httpResponse.setContentType("application/x-gzip");
+				httpResponse.setHeader("Content-Disposition", "attachment; filename=\""+logFile.getName()+".gz\"");
 
 				final FileInputStream inputStream = new FileInputStream(logFile);
-				final XZOutputStream xzOutputStream = new XZOutputStream(httpResponse.getOutputStream(), new LZMA2Options());
+				final OutputStream outputStream = new GZIPOutputStream(httpResponse.getOutputStream());
 				try {
-					IOUtils.copy(inputStream, xzOutputStream);
-					// In order for the stream to be correctly
-					xzOutputStream.endBlock();
-					xzOutputStream.flush();
+					IOUtils.copy(inputStream, outputStream);
 				} finally {
 					inputStream.close();
-					xzOutputStream.close();
+					outputStream.close();
 				}
-				httpResponse.flushBuffer();
 			} else {
 				httpResponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
 				final PrintWriter writer = httpResponse.getWriter();

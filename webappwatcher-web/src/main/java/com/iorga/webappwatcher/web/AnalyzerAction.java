@@ -74,16 +74,16 @@ public class AnalyzerAction implements Serializable {
 	private boolean retentionLogLoaded = false;
 
 	public void handleFileUpload(final FileUploadEvent event) throws IOException, ClassNotFoundException {
-		readEventLogs(event.getFile().getInputstream());
+		readEventLogs(event.getFile().getInputstream(), event.getFile().getFileName());
 	}
 
-	public void readEventLogs(final InputStream inputstream) throws IOException, ClassNotFoundException {
+	public void readEventLogs(final InputStream inputstream, final String fileName) throws IOException, ClassNotFoundException {
 		// Init values
 		allFirstEventLogDate = null;
 		allLastEventLogDate = null;
 		allMaxMemoryUsed = 0;
 
-		final ObjectInputStream objectInputStream = EventLogManager.readLog(inputstream);
+		final ObjectInputStream objectInputStream = EventLogManager.readLog(inputstream, fileName);
 		try {
 			final StringBuilder cpuUsageJsonValuesBuilder = new StringBuilder();
 			final StringBuilder memoryUsedJsonValuesBuilder = new StringBuilder();

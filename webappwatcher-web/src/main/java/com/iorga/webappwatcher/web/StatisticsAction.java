@@ -63,7 +63,7 @@ public class StatisticsAction implements Serializable {
 		outputStream.println("Start date;End date;Distinct users;Number of requests;Duration;Average;Median;90c;Relevent number of requests;Relevent duration;Relevent Average;Relevent Median;Relevent 90c");
 
 		for (final UploadedFile uploadedFile : uploadedFiles) {
-			readEventLogs(outputStream, uploadedFile.getInputstream());
+			readEventLogs(outputStream, uploadedFile.getInputstream(), uploadedFile.getFileName());
 		}
 
 		facesContext.responseComplete();
@@ -78,8 +78,8 @@ public class StatisticsAction implements Serializable {
 
 	/// Utils ///
 	////////////
-	public void readEventLogs(final ServletOutputStream outputStream, final InputStream inputstream) throws IOException, ClassNotFoundException {
-		final ObjectInputStream objectInputStream = EventLogManager.readLog(inputstream);
+	public void readEventLogs(final ServletOutputStream outputStream, final InputStream inputstream, final String fileName) throws IOException, ClassNotFoundException {
+		final ObjectInputStream objectInputStream = EventLogManager.readLog(inputstream, fileName);
 		try {
 			CSVLine csvLine = new CSVLine();
 
