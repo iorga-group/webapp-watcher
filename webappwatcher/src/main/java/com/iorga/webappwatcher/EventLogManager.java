@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Constructor;
 import java.util.Date;
 import java.util.Deque;
@@ -16,7 +18,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
@@ -36,7 +37,7 @@ import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.util.StartableRunnable;
 
 public class EventLogManager {
-	private static final String EVENT_LOG_FILE_EXTENSION = ".ser.xz";
+	private static final String EVENT_LOG_FILE_EXTENSION = ".ser";
 
 	private static final Logger log = LoggerFactory.getLogger(EventLogManager.class);
 
@@ -58,7 +59,7 @@ public class EventLogManager {
 
 	private File logFile;
 	private ObjectOutputStream objectOutputStreamLog;
-	private XZOutputStream xzOutputStream;
+	private RandomAccessFile rafLog;
 	private final Object objectOutputStreamLogLock = new Object();
 
 	private static final long SLEEP_BETWEEN_TEST_FOR_EVENT_LOG_TO_COMPLETE_MILLIS = 300;
@@ -284,8 +285,8 @@ public class EventLogManager {
 					Thread.sleep(1);
 					logFile = generateLogFile(); // Never re-write on a previous log because of "AC" header in an objectOutputStream, see http://stackoverflow.com/questions/1194656/appending-to-an-objectoutputstream/1195078#1195078
 				}
-				xzOutputStream = new XZOutputStream(new FileOutputStream(logFile), new LZMA2Options());
-				objectOutputStreamLog = new ObjectOutputStream(xzOutputStream);
+				rafLog = new RandomAccessFile(logFile, "rw");
+				objectOutputStreamLog = new ObjectOutputStream(new FileOutputStream(rafLog.getFD()));
 			}
 			return objectOutputStreamLog;
 		}
@@ -295,9 +296,6 @@ public class EventLogManager {
 		synchronized (objectOutputStreamLogLock) {
 			if (objectOutputStreamLog != null) {
 				objectOutputStreamLog.flush();
-				// In order for the stream to be correctly
-				xzOutputStream.endBlock();
-				xzOutputStream.flush();
 			}
 		}
 	}
@@ -311,12 +309,20 @@ public class EventLogManager {
 			if (objectOutputStreamLog != null) {
 				try {
 					objectOutputStreamLog.close();
+					rafLog.close();
+					final File xzFile = new File(logFile.getAbsolutePath()+".xz");
+					final OutputStream outputStream = new XZOutputStream(new FileOutputStream(xzFile), new LZMA2Options());
+					final InputStream inputStream = new FileInputStream(logFile);
+					IOUtils.copy(inputStream, outputStream);
+					inputStream.close();
+					outputStream.close();
+					logFile.delete();
 				} catch (final IOException e) {
 					throw new IOException("Problem while closing the event log", e);
 				} finally {
 					// Reset fields to null even if there was a problem while closing the log, in order to write to a new one next time
+					rafLog = null;
 					objectOutputStreamLog = null;
-					xzOutputStream = null;
 					logFile = null;
 				}
 			}
@@ -341,17 +347,21 @@ public class EventLogManager {
 			if (logFile != null && logFile.exists()) {
 				httpResponse.setStatus(HttpServletResponse.SC_OK);
 				httpResponse.setContentType("application/x-xz");
-				httpResponse.setHeader("Content-Disposition", "attachment; filename=\""+logFile.getName()+"\"");
+				httpResponse.setHeader("Content-Disposition", "attachment; filename=\""+logFile.getName()+".xz\"");
 				httpResponse.setContentLength((int) logFile.length());
 
 				final FileInputStream inputStream = new FileInputStream(logFile);
-				final ServletOutputStream outputStream = httpResponse.getOutputStream();
+				final XZOutputStream xzOutputStream = new XZOutputStream(httpResponse.getOutputStream(), new LZMA2Options());
 				try {
-					IOUtils.copy(inputStream, outputStream);
+					IOUtils.copy(inputStream, xzOutputStream);
+					// In order for the stream to be correctly
+					xzOutputStream.endBlock();
+					xzOutputStream.flush();
 				} finally {
 					inputStream.close();
-					outputStream.close();
+					xzOutputStream.close();
 				}
+				httpResponse.flushBuffer();
 			} else {
 				httpResponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
 				final PrintWriter writer = httpResponse.getWriter();
