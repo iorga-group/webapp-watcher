@@ -218,26 +218,28 @@ public class StatisticsAction implements Serializable {
 	}
 
 	private void writeCsvDurationStatsLine(final CSVDurationStatsLine csvLine, final RequestEventLog currentRequestEventLog, final ServletOutputStream outputStream) throws IOException {
-		final DescriptiveStatistics durations = csvLine.durations;
-		final DescriptiveStatistics releventDurations = csvLine.releventDurations;
-		final StringBuilder line = new StringBuilder();
-		// Processing "Start date;End date;Distinct users;Number of requests;Duration;Average;Median;90c;Relevent number of requests;Relevent duration;Relevent Average;Relevent Median;Relevent 90c"
-		final Date currentRequestDate = currentRequestEventLog.getDate();
-		line.append(dateFormatter.format(csvLine.startDate)).append(";")
-			.append(dateFormatter.format(currentRequestDate != null ? currentRequestDate : csvLine.startDate)).append(";")
-			.append(csvLine.principals.size()).append(";")
-			.append(durations.getN()).append(";")
-			.append((int)durations.getSum()).append(";")
-			.append((int)durations.getMean()).append(";")
-			.append((int)durations.getPercentile(50)).append(";")
-			.append((int)durations.getPercentile(90)).append(";")
-			.append(releventDurations.getN()).append(";")
-			.append((int)releventDurations.getSum()).append(";")
-			.append((int)releventDurations.getMean()).append(";")
-			.append((int)releventDurations.getPercentile(50)).append(";")
-			.append((int)releventDurations.getPercentile(90)).append(";");
+		if (csvLine.startDate != null) { // else the csvLine has never been filled
+			final DescriptiveStatistics durations = csvLine.durations;
+			final DescriptiveStatistics releventDurations = csvLine.releventDurations;
+			final StringBuilder line = new StringBuilder();
+			// Processing "Start date;End date;Distinct users;Number of requests;Duration;Average;Median;90c;Relevent number of requests;Relevent duration;Relevent Average;Relevent Median;Relevent 90c"
+			final Date currentRequestDate = currentRequestEventLog.getDate();
+			line.append(dateFormatter.format(csvLine.startDate)).append(";")
+				.append(dateFormatter.format(currentRequestDate != null ? currentRequestDate : csvLine.startDate)).append(";")
+				.append(csvLine.principals.size()).append(";")
+				.append(durations.getN()).append(";")
+				.append((int)durations.getSum()).append(";")
+				.append((int)durations.getMean()).append(";")
+				.append((int)durations.getPercentile(50)).append(";")
+				.append((int)durations.getPercentile(90)).append(";")
+				.append(releventDurations.getN()).append(";")
+				.append((int)releventDurations.getSum()).append(";")
+				.append((int)releventDurations.getMean()).append(";")
+				.append((int)releventDurations.getPercentile(50)).append(";")
+				.append((int)releventDurations.getPercentile(90)).append(";");
 
-		outputStream.println(line.toString());
+			outputStream.println(line.toString());
+		}
 	}
 
 	private void readEventLogsForDurationPerPrincipalStats(final InputStream inputstream, final String fileName, final DurationPerPrincipalStats durationPerPrincipalStats, final RequestActionFilter requestActionFilter) throws FileNotFoundException, IOException, ClassNotFoundException {
