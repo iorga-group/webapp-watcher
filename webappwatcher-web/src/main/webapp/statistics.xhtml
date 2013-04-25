@@ -30,7 +30,8 @@
 					</ui:repeat>
 				</ul>
 				<h:form>
-					<h:commandButton value="Extract duration stats" action="#{statisticsAction.extractDurationStats}"/>  
+					<h:commandButton value="Extract duration stats" action="#{statisticsAction.extractDurationStats}"/>
+					<h:commandButton value="Extract duration stats per principal" action="#{statisticsAction.extractDurationPerPrincipalStats()}"/>
 				</h:form>
 			</p:fieldset>
 			<h:form enctype="multipart/form-data">
