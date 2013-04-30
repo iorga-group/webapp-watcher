@@ -610,7 +610,7 @@ public class StatisticsAction implements Serializable {
 			}
 			@Override
 			public Object getValueForN(final int n, final DescriptiveStatistics descriptiveStatisticsPerTimeSlice) {
-				return (((double)n/(double)descriptiveStatisticsPerTimeSlice.getN())*100d);
+				return ((double)n/(double)descriptiveStatisticsPerTimeSlice.getN())*100d;
 			}
 		}.write(stats, out);
 
@@ -715,7 +715,7 @@ public class StatisticsAction implements Serializable {
 			}
 			@Override
 			public Object getValueForN(final int n, final DescriptiveStatistics descriptiveStatisticsPerTimeSlice) {
-				return (int)(((double)n/(double)descriptiveStatisticsPerTimeSlice.getN())*100d);
+				return ((double)n/(double)descriptiveStatisticsPerTimeSlice.getN())*100d;
 			}
 		}.write(stats, out);
 	}
