@@ -30,6 +30,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
 import com.iorga.webappwatcher.eventlog.ExcludedRequestsEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
@@ -311,7 +312,11 @@ public class RequestLogFilter implements Filter {
 			}
 		} catch (final Throwable t) {
 			if (matches) {
-				logRequest.setThrowable(t);
+				try {
+					logRequest.setThrowableStackTraceAsString(Throwables.getStackTraceAsString(t));
+				} catch (Throwable t2) {
+					logRequest.setThrowableStackTraceAsString("Exception in thread \""+Thread.currentThread().getName()+"\" "+t.getClass().getName()+" couldn't be got as string due to "+t2.getClass().getName());
+				}
 			}
 			if (t instanceof IOException) {
 				throw (IOException)t;
