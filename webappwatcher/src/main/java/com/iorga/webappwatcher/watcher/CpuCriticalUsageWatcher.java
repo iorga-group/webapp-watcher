@@ -44,7 +44,9 @@ public class CpuCriticalUsageWatcher {
 						final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(deadlockedThreadIds, true, true);
 						final Thread[] deadLockedThreads = new Thread[threadInfos.length];
 						for (int i = 0; i < threadInfos.length; i++) {
-							deadLockedThreads[i] = new Thread(threadInfos[i]);
+							final ThreadInfo threadInfo = threadInfos[i];
+							final long threadId = threadInfo.getThreadId();
+							deadLockedThreads[i] = new Thread(threadInfo, threadMXBean.getThreadUserTime(threadId), threadMXBean.getThreadCpuTime(threadId));
 						}
 						deadLockedThreadsEventLog.setDeadLockedThreads(deadLockedThreads);
 						eventLogManager.fire(deadLockedThreadsEventLog);

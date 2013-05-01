@@ -65,8 +65,8 @@ public class DeadLockedThreadsEventLog extends EventLog {
 		private final MonitorInfo[] lockedMonitors;
 		private final LockInfo[] lockedSynchronizers;
 
-		public Thread(final ThreadInfo threadInfo) {
-			super(threadInfo);
+		public Thread(final ThreadInfo threadInfo, final long userTime, final long cpuTime) {
+			super(threadInfo, userTime, cpuTime);
 			final java.lang.management.MonitorInfo[] lockedMonitors = threadInfo.getLockedMonitors();
 			if (lockedMonitors != null) {
 				this.lockedMonitors = new MonitorInfo[lockedMonitors.length];

@@ -63,14 +63,20 @@ public class SystemEventLogger {
 							// 99% to avoid Plotter showing a scale from 0% to 200%.
 							systemEventLog.setCpuUsage(Math.min(100F, elapsedCpu / (elapsedTime * 10000F * availableProcessors))); // elapsedCpu / (elapsedTime * 1000F * 1000F * availableProcessors)) * 100 => pour l'avoir en %
 						}
+						systemEventLog.setUptime(uptime);
+						systemEventLog.setProcessCpuTime(processCpuTime);
+						systemEventLog.setAvailableProcessors(availableProcessors);
 
 						// We now log all threads in RUNNABLE or BLOCKED state
 						final ThreadInfo[] allThreads = threadMXBean.dumpAllThreads(false, false);
 						final List<SystemEventLog.Thread> loggedThreads = new LinkedList<SystemEventLog.Thread>();
 						for (final ThreadInfo threadInfo : allThreads) {
-							final State threadState = threadInfo.getThreadState();
-							if ((threadState == State.BLOCKED || threadState == State.RUNNABLE) && PatternUtils.matches(threadInfo.getThreadName(), threadNameIncludes, threadNameExcludes)) {
-								loggedThreads.add(new SystemEventLog.Thread(threadInfo));
+							if (threadInfo != null) {	// It seems that sometime (with JRockit) threadInfo is null
+								final State threadState = threadInfo.getThreadState();
+								if ((threadState == State.BLOCKED || threadState == State.RUNNABLE) && PatternUtils.matches(threadInfo.getThreadName(), threadNameIncludes, threadNameExcludes)) {
+									final long threadId = threadInfo.getThreadId();
+									loggedThreads.add(new SystemEventLog.Thread(threadInfo, threadMXBean.getThreadUserTime(threadId), threadMXBean.getThreadCpuTime(threadId)));
+								}
 							}
 						}
 						systemEventLog.setBlockedOrRunningThreads(loggedThreads.toArray(new SystemEventLog.Thread[loggedThreads.size()]));
