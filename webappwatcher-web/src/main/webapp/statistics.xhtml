@@ -8,6 +8,14 @@
 
 	<h:head>
 		<title>WebappWatcher - Statistics</title>
+		<h:outputScript library="js" name="jquery.flot.min.js"/>
+		<h:outputScript library="js" name="jquery.flot.time.min.js"/>
+		<h:outputScript library="js" name="jquery.flot.resize.min.js"/>
+		<h:outputScript library="js" name="jquery.flot.crosshair.min.js"/>
+		<h:outputScript library="js" name="jquery.flot.navigate.min.js"/>
+		<h:outputScript library="js" name="jquery.flot.stack.min.js"/>
+		<h:outputScript library="js" name="utils.js"/>
+		<h:outputScript library="js" name="statistics.js"/>
 		<style>
 			html {
 				height: 100%;
@@ -32,6 +40,11 @@
 				<h:form>
 					<h:commandButton value="Extract duration stats" action="#{statisticsAction.extractDurationStats}"/>
 					<h:commandButton value="Extract duration stats per principal" action="#{statisticsAction.extractDurationPerPrincipalStats()}"/>
+					<p:fieldset legend="Graph">
+						<p>Nb of slices : <h:inputText value="#{statisticsAction.nbItemsForDispersionTables}" /></p>
+						<p>Minutes by slice : <h:inputText value="#{statisticsAction.timeSliceDurationMinutes}" /></p>
+						<h:commandButton value="Compute !" action="#{statisticsAction.computeGraph()}"/>
+					</p:fieldset>
 				</h:form>
 			</p:fieldset>
 			<h:form enctype="multipart/form-data">
@@ -42,6 +55,17 @@
 					auto="true"
 					allowTypes="/(\.|\/)(xz|gz)$/" />
 			</h:form>
+		</p:panel>
+		<p:panel header="Graphs" rendered="#{not empty statisticsAction.durationsFor1clickSeriesJson}">
+			<div id="placeholder" style="width:100%;height:600px;"></div>
+			<script id="source">
+			$(function () {
+				var cpuUsageValues = [#{statisticsAction.cpuUsageJsonValues}];
+				var memoryUsageValues = [#{statisticsAction.memoryUsageJsonValues}];
+				var durationsFor1clickSeriesJson = [#{statisticsAction.durationsFor1clickSeriesJson}];
+				initStatistics(cpuUsageValues, memoryUsageValues, durationsFor1clickSeriesJson);
+			});
+			</script>
 		</p:panel>
 	</h:body>
 </html>

@@ -31,6 +31,7 @@ import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
+import com.iorga.webappwatcher.eventlog.SystemEventLog;
 import com.iorga.webappwatcher.web.StatisticsAction.DurationPerPrincipalStats.PrincipalContext;
 import com.iorga.webappwatcher.web.StatisticsAction.DurationPerPrincipalStats.TimeSlice;
 import com.iorga.webappwatcher.web.StatisticsAction.DurationPerPrincipalStats.TimeSlice.StatsPerPrincipal;
@@ -49,6 +50,16 @@ public class StatisticsAction implements Serializable {
 
 	private List<UploadedFile> uploadedFiles = new ArrayList<UploadedFile>();
 
+	private int nbItemsForDispersionTables = 6;
+	private int timeSliceDurationMinutes = 30;
+
+	private DurationPerPrincipalStats durationPerPrincipalStats;
+	private String cpuUsageJsonValues;
+	private String memoryUsageJsonValues;
+	private String durationsFor1clickSeriesJson;
+	private int lastNbItemsForDispersionTables;
+	private int lastTimeSliceDurationMinutes;
+
 	private static class CSVDurationStatsLine {
 		private Date startDate = null;
 		private final Set<String> principals = new HashSet<String>();
@@ -62,6 +73,8 @@ public class StatisticsAction implements Serializable {
 			private final Date endDate;
 			private final DescriptiveStatistics durationsBetween2clicks = new DescriptiveStatistics();
 			private final DescriptiveStatistics durationsFor1click = new DescriptiveStatistics();
+			private final DescriptiveStatistics cpuUsage = new DescriptiveStatistics();
+			private final DescriptiveStatistics memoryUsage = new DescriptiveStatistics();
 
 			public static class StatsPerPrincipal {
 				private final DescriptiveStatistics durationsBetween2clicks = new DescriptiveStatistics();
@@ -69,9 +82,9 @@ public class StatisticsAction implements Serializable {
 			}
 			private final Map<String, StatsPerPrincipal> statsPerPrincipal = Maps.newHashMap();
 
-			public TimeSlice(final Date startDate) {
+			public TimeSlice(final Date startDate, final long timeSliceDurationMillis) {
 				this.startDate = startDate;
-				this.endDate = new Date(startDate.getTime() + TIME_SLICE_DURATION_MILLIS);
+				this.endDate = new Date(startDate.getTime() + timeSliceDurationMillis);
 			}
 		}
 		public static class PrincipalContext {
@@ -149,9 +162,7 @@ public class StatisticsAction implements Serializable {
 
 		final DurationPerPrincipalStats durationPerPrincipalStats = new DurationPerPrincipalStats();
 
-		for (final UploadedFile uploadedFile : uploadedFiles) {
-			readEventLogsForDurationPerPrincipalStats(uploadedFile.getInputstream(), uploadedFile.getFileName(), durationPerPrincipalStats, new JSF21AndRichFaces4RequestActionFilter());
-		}
+		readEventLogsForDurationPerPrincipalStats(durationPerPrincipalStats, new JSF21AndRichFaces4RequestActionFilter(), TIME_SLICE_DURATION_MILLIS);
 
 		final ServletOutputStream outputStream = response.getOutputStream();
 		writeDurationPerPrincpalStats(durationPerPrincipalStats, outputStream);
@@ -159,11 +170,82 @@ public class StatisticsAction implements Serializable {
 		facesContext.responseComplete();
 	}
 
+	public void computeGraph() throws FileNotFoundException, IOException, ClassNotFoundException {
+		durationPerPrincipalStats = new DurationPerPrincipalStats();
+
+		if (lastTimeSliceDurationMinutes != timeSliceDurationMinutes) {
+			readEventLogsForDurationPerPrincipalStats(durationPerPrincipalStats, new JSF21AndRichFaces4RequestActionFilter(), timeSliceDurationMinutes * 1000 * 60);
+		}
+
+		if (lastTimeSliceDurationMinutes != timeSliceDurationMinutes || lastNbItemsForDispersionTables != nbItemsForDispersionTables) {
+			final StringBuilder cpuUsageJsonBuilder = new StringBuilder();
+			final StringBuilder memoryUsageJsonBuilder = new StringBuilder();
+			// now let's build the json series
+			final double[] yValues = new double[nbItemsForDispersionTables];
+			final StringBuilder[] seriesBuilders = new StringBuilder[nbItemsForDispersionTables];
+			// Create the list of different Y values
+			for (int i = 0; i < yValues.length; i++) {
+				final double yValue = durationPerPrincipalStats.totalDurationsFor1click.getPercentile((i+1d)/nbItemsForDispersionTables*100d);
+				final StringBuilder seriesBuilder = new StringBuilder();
+				seriesBuilder.append("{stack:true,lines:{show:true,fill:true},label:'");
+				if (i == 0) {
+					seriesBuilder.append('0');
+				} else {
+					seriesBuilder.append((int)yValues[i - 1]);
+				}
+				seriesBuilder.append(" - ").append((int)yValue).append("',data:[");
+				yValues[i] = yValue;
+				seriesBuilders[i] = seriesBuilder;
+			}
+			boolean firstSlice = true;
+			TimeSlice previousTimeSlice = null;
+			for(final TimeSlice timeSlice : durationPerPrincipalStats.timeSlices) {
+				//TODO : améliorer cet algorithme en itérant sur chaque value de totalDurationsFor1click et pour chacune d'elle aller chercher par dichotomie l'entier à incrémenter correspondant à la bonne tranche des yValues
+				final long middleTimeSliceTime = (timeSlice.endDate.getTime()+timeSlice.startDate.getTime()) / 2;	// the data should be displayed in the middle of the slice
+				final boolean mustAppendNullForPrevious = previousTimeSlice != null && !previousTimeSlice.endDate.equals(timeSlice.startDate);
+				for (int i = 0; i < yValues.length; i++) {
+					final StringBuilder seriesBuilder = seriesBuilders[i];
+					final double maxInclude = yValues[i];
+					final double minExclude = i == 0 ? 0d : yValues[i - 1];
+					final double[] values = timeSlice.durationsFor1click.getValues();
+					int n = 0;
+					for (final double value : values) {
+						if (minExclude < value && value <= maxInclude) {
+							n++;
+						}
+					}
+					writeToJsonBuilderAndAppendNullBeforeIfNecessary(middleTimeSliceTime, n, seriesBuilder, firstSlice, mustAppendNullForPrevious, previousTimeSlice);
+				}
+				// adding cpu & memory info
+				writeToJsonBuilderAndAppendNullBeforeIfNecessary(middleTimeSliceTime, timeSlice.cpuUsage.getMean(), cpuUsageJsonBuilder, firstSlice, mustAppendNullForPrevious, previousTimeSlice);
+				writeToJsonBuilderAndAppendNullBeforeIfNecessary(middleTimeSliceTime, timeSlice.memoryUsage.getMean(), memoryUsageJsonBuilder, firstSlice, mustAppendNullForPrevious, previousTimeSlice);
+
+				firstSlice = false;
+				previousTimeSlice = timeSlice;
+			}
+			final StringBuilder durationsFor1clickSeriesBuilder = new StringBuilder();
+			for (final StringBuilder seriesBuilder : seriesBuilders) {
+				seriesBuilder.append("]}");
+				if (durationsFor1clickSeriesBuilder.length() > 0) {
+					durationsFor1clickSeriesBuilder.append(',');
+				}
+				durationsFor1clickSeriesBuilder.append(seriesBuilder);
+			}
+			durationsFor1clickSeriesJson = durationsFor1clickSeriesBuilder.toString();
+			cpuUsageJsonValues = cpuUsageJsonBuilder.toString();
+			memoryUsageJsonValues = memoryUsageJsonBuilder.toString();
+
+			lastNbItemsForDispersionTables = nbItemsForDispersionTables;
+			lastTimeSliceDurationMinutes = timeSliceDurationMinutes;
+		}
+	}
+
 	/// Events ///
 	/////////////
 	public void handleFileUpload(final FileUploadEvent event) throws IOException, ClassNotFoundException {
 		System.out.println("Handling "+event.getFile().getFileName());
 		uploadedFiles.add(event.getFile());
+		resetComputedGraph();
 	}
 
 	/// Utils ///
@@ -242,33 +324,74 @@ public class StatisticsAction implements Serializable {
 		}
 	}
 
-	private void readEventLogsForDurationPerPrincipalStats(final InputStream inputstream, final String fileName, final DurationPerPrincipalStats durationPerPrincipalStats, final RequestActionFilter requestActionFilter) throws FileNotFoundException, IOException, ClassNotFoundException {
-		final ObjectInputStream objectInputStream = EventLogManager.readLog(inputstream, fileName);
-		try {
-			EventLog eventLog;
-			RequestEventLog requestEventLog = null;
+	private void readEventLogsForDurationPerPrincipalStats(final DurationPerPrincipalStats durationPerPrincipalStats, final RequestActionFilter requestActionFilter, final long timeSliceDurationMillis) throws FileNotFoundException, IOException, ClassNotFoundException {
+		for (final UploadedFile uploadedFile : uploadedFiles) {
+			final ObjectInputStream objectInputStream = EventLogManager.readLog(uploadedFile.getInputstream(), uploadedFile.getFileName());
 			try {
-				while ((eventLog = readEventLog(objectInputStream)) != null) {
-					if (eventLog instanceof RequestEventLog) {
-						requestEventLog = (RequestEventLog) eventLog;
+				EventLog eventLog;
+				try {
+					while ((eventLog = readEventLog(objectInputStream)) != null) {
+						readRequestEventLogForDurationPerPrincipalStats(eventLog, durationPerPrincipalStats, requestActionFilter, timeSliceDurationMillis);
 
-						readRequestEventLogForDurationPerPrincipalStats(requestEventLog, durationPerPrincipalStats, requestActionFilter);
+//						if (eventLog instanceof RequestEventLog) {
+//							final RequestEventLog requestEventLog = (RequestEventLog) eventLog;
+//
+//							readRequestEventLogForDurationPerPrincipalStats(requestEventLog, durationPerPrincipalStats, requestActionFilter, timeSliceDurationMillis);
+//						} else if (eventLog instanceof SystemEventLog && cpuUsageJsonBuilder != null && memoryUsageJsonBuilder != null) {
+//							final SystemEventLog systemEventLog = (SystemEventLog) eventLog;
+//							writeToJsonBuilder(systemEventLog.getDate(), systemEventLog.getCpuUsage(), cpuUsageJsonBuilder);
+//							writeToJsonBuilder(systemEventLog.getDate(), systemEventLog.getHeapMemoryUsed() + systemEventLog.getNonHeapMemoryUsed(), memoryUsageJsonBuilder);
+//						}
 					}
+				} catch (final EOFException e) {
+					// Normal end of the read file
 				}
-			} catch (final EOFException e) {
-				// Normal end of the read file
+			} finally {
+				objectInputStream.close();
 			}
-		} finally {
-			objectInputStream.close();
 		}
 	}
 
-	private void readRequestEventLogForDurationPerPrincipalStats(final RequestEventLog requestEventLog, final DurationPerPrincipalStats stats, final RequestActionFilter requestActionFilter) {
-		if (requestActionFilter.isAnActionRequest(requestEventLog)) {
+	private void writeToJsonBuilder(final Date date, final Object value, final StringBuilder jsonBuilder) {
+		writeToJsonBuilder(date.getTime(), value, jsonBuilder);
+	}
+
+	private void writeToJsonBuilder(final Date date, final Object value, final StringBuilder jsonBuilder, final boolean firstValue) {
+		writeToJsonBuilder(date.getTime(), value, jsonBuilder, firstValue);
+	}
+
+	private void writeToJsonBuilder(final long time, final Object value, final StringBuilder jsonBuilder) {
+		writeToJsonBuilder(time, value, jsonBuilder, jsonBuilder.length() > 0);
+	}
+
+	private void writeToJsonBuilder(final long time, final Object value, final StringBuilder jsonBuilder, final boolean firstValue) {
+		if (!firstValue) {
+			jsonBuilder.append(',');
+		}
+		jsonBuilder.append('[').append(time).append(',').append(value).append(']');
+	}
+
+	private void writeToJsonBuilderAndAppendNullBeforeIfNecessary(final long time, final Object value, final StringBuilder jsonBuilder, final boolean firstValue, final boolean mustAppendNullForPrevious, final TimeSlice previousTimeSlice) {
+		if (mustAppendNullForPrevious) {
+			// First check if we must add an "end point" for previous datas if there is a gap between time slices
+			writeToJsonBuilder(previousTimeSlice.endDate, "null", jsonBuilder, firstValue);
+		}
+		writeToJsonBuilder(time, value, jsonBuilder, firstValue && !mustAppendNullForPrevious);
+	}
+
+	private void readRequestEventLogForDurationPerPrincipalStats(final EventLog eventLog, final DurationPerPrincipalStats stats, final RequestActionFilter requestActionFilter, final long timeSliceDurationMillis) {
+		RequestEventLog requestEventLog = null;
+		final Date eventDate = eventLog.getDate();
+
+		if (eventLog instanceof SystemEventLog) {
+			final TimeSlice timeSlice = getTimeSlice(eventDate, stats, timeSliceDurationMillis);
+			final SystemEventLog systemEventLog = (SystemEventLog) eventLog;
+			timeSlice.cpuUsage.addValue(systemEventLog.getCpuUsage());
+			timeSlice.memoryUsage.addValue(systemEventLog.getNonHeapMemoryUsed() + systemEventLog.getHeapMemoryUsed());
+		} else if (eventLog instanceof RequestEventLog && requestActionFilter.isAnActionRequest(requestEventLog = (RequestEventLog) eventLog)) {
 			final String principal = requestEventLog.getPrincipal();
-			final Date requestDate = requestEventLog.getDate();
 			// Compute duration for 1 click
-			final TimeSlice timeSlice = getTimeSlice(requestDate, stats);
+			final TimeSlice timeSlice = getTimeSlice(eventDate, stats, timeSliceDurationMillis);
 			final StatsPerPrincipal statsPerPrincipal = getStatsPerPrincipal(timeSlice, principal);
 			Long durationMillis = requestEventLog.getDurationMillis();
 			if (durationMillis == null) {
@@ -283,22 +406,22 @@ public class StatisticsAction implements Serializable {
 			final Date lastClick = principalContext.lastClick;
 			if (lastClick != null) {
 				// Last click, we can compute the duration between the two clicks
-				final TimeSlice lastClickTimeSlice = getTimeSlice(lastClick, stats);
+				final TimeSlice lastClickTimeSlice = getTimeSlice(lastClick, stats, timeSliceDurationMillis);
 				final StatsPerPrincipal lastClickStatsPerPrincipal = getStatsPerPrincipal(lastClickTimeSlice, principal);
-				final long duration = requestDate.getTime() - lastClick.getTime();
+				final long duration = eventDate.getTime() - lastClick.getTime();
 				lastClickStatsPerPrincipal.durationsBetween2clicks.addValue(duration);
 				timeSlice.durationsBetween2clicks.addValue(duration);
 				stats.totalDurationsBetween2clicks.addValue(duration);
 			}
-			principalContext.lastClick = requestDate;
+			principalContext.lastClick = eventDate;
 		}
 	}
 
-	private TimeSlice getTimeSlice(final Date date, final DurationPerPrincipalStats stats) {
+	private TimeSlice getTimeSlice(final Date date, final DurationPerPrincipalStats stats, final long timeSliceDurationMillis) {
 		final int index = stats.lastAccessedTimeSliceIndex;
 		if (index == -1) {
 			// no last accessed time slice, we must found the slice by dichotomy
-			return findOrCreateTimeSlice(date, stats);
+			return findOrCreateTimeSlice(date, stats, timeSliceDurationMillis);
 		} else {
 			// let's see if the date fits in current time slice
 			final TimeSlice currentTimeSlice = stats.timeSlices.get(index);
@@ -313,14 +436,14 @@ public class StatisticsAction implements Serializable {
 					return returnTimeSlice(previousTimeSlice, stats, previousIndex);
 				} else {
 					// does not fit in the previous time slice, must find it or create it by dichotomy
-					return findOrCreateTimeSlice(date, stats);
+					return findOrCreateTimeSlice(date, stats, timeSliceDurationMillis);
 				}
 			} else {
 				// we are after, let's check if the next slice exists and create it other wise
 				final int nextIndex = index + 1;
 				if (stats.timeSlices.size() <= nextIndex) {
 					// let's create the new time slice
-					final TimeSlice timeSlice = createNewTimeSlice(date, stats);
+					final TimeSlice timeSlice = createNewTimeSlice(date, stats, timeSliceDurationMillis);
 					return returnTimeSlice(timeSlice, stats, nextIndex);
 				} else {
 					final TimeSlice nextTimeSlice = stats.timeSlices.get(nextIndex);
@@ -328,14 +451,14 @@ public class StatisticsAction implements Serializable {
 						return returnTimeSlice(nextTimeSlice, stats, nextIndex);
 					} else {
 						// does not fit in the next time slice, must find it or create it by dichotomy
-						return findOrCreateTimeSlice(date, stats);
+						return findOrCreateTimeSlice(date, stats, timeSliceDurationMillis);
 					}
 				}
 			}
 		}
 	}
 
-	private TimeSlice findOrCreateTimeSlice(final Date date, final DurationPerPrincipalStats stats) {
+	private TimeSlice findOrCreateTimeSlice(final Date date, final DurationPerPrincipalStats stats,final long timeSliceDurationMillis) {
 		final List<TimeSlice> timeSlices = stats.timeSlices;
 		// will binary search the time slice
 		int low = 0;
@@ -353,7 +476,7 @@ public class StatisticsAction implements Serializable {
 			}
 		}
 		// not found in the existing time slices, must create a new one
-		return createNewTimeSlice(date, stats);
+		return createNewTimeSlice(date, stats, timeSliceDurationMillis);
 	}
 
 	private boolean isDateInTimeSlice(final Date date, final TimeSlice currentTimeSlice) {
@@ -365,7 +488,7 @@ public class StatisticsAction implements Serializable {
 		return timeSlice;
 	}
 
-	private TimeSlice createNewTimeSlice(final Date date, final DurationPerPrincipalStats stats) {
+	private TimeSlice createNewTimeSlice(final Date date, final DurationPerPrincipalStats stats, final long timeSliceDurationMillis) {
 		// As the time slices are created in a sorted way, we can create it just by looking the last slice, check if the date fits inside a new slice
 		// which would be just after, and if not, add it a new one which begins with that date
 		final List<TimeSlice> timeSlices = stats.timeSlices;
@@ -374,16 +497,16 @@ public class StatisticsAction implements Serializable {
 		if (lastIndex >= 0) {
 			final TimeSlice lastTimeSlice = timeSlices.get(lastIndex);
 			final Date endDate = lastTimeSlice.endDate;
-			final TimeSlice newTimeSliceJustAfterLast = new TimeSlice(endDate);
+			final TimeSlice newTimeSliceJustAfterLast = new TimeSlice(endDate, timeSliceDurationMillis);
 			if (isDateInTimeSlice(date, newTimeSliceJustAfterLast)) {
 				newTimeSlice = newTimeSliceJustAfterLast;
 			} else {
 				// the given date doesn't fit in the next time slice, let's create a new one for it
-				newTimeSlice = new TimeSlice(date);
+				newTimeSlice = new TimeSlice(date, timeSliceDurationMillis);
 			}
 		} else {
 			// Create a new time slice because there is no last time slice
-			newTimeSlice = new TimeSlice(date);
+			newTimeSlice = new TimeSlice(date,timeSliceDurationMillis);
 		}
 		timeSlices.add(newTimeSlice);
 		return newTimeSlice;
@@ -720,6 +843,14 @@ public class StatisticsAction implements Serializable {
 		}.write(stats, out);
 	}
 
+	private void resetComputedGraph() {
+		this.durationPerPrincipalStats = null;
+		this.cpuUsageJsonValues = null;
+		this.memoryUsageJsonValues = null;
+		this.durationsFor1clickSeriesJson = null;
+		this.lastNbItemsForDispersionTables = 0;
+	}
+
 	/// Getters & Setters ///
 	public List<UploadedFile> getUploadedFiles() {
 		return uploadedFiles;
@@ -727,5 +858,33 @@ public class StatisticsAction implements Serializable {
 
 	public void setUploadedFiles(final List<UploadedFile> uploadedFiles) {
 		this.uploadedFiles = uploadedFiles;
+	}
+
+	public String getDurationsFor1clickSeriesJson() {
+		return durationsFor1clickSeriesJson;
+	}
+
+	public String getCpuUsageJsonValues() {
+		return cpuUsageJsonValues;
+	}
+
+	public String getMemoryUsageJsonValues() {
+		return memoryUsageJsonValues;
+	}
+
+	public int getNbItemsForDispersionTables() {
+		return nbItemsForDispersionTables;
+	}
+
+	public void setNbItemsForDispersionTables(final int nbItemsForDispersionTables) {
+		this.nbItemsForDispersionTables = nbItemsForDispersionTables;
+	}
+
+	public int getTimeSliceDurationMinutes() {
+		return timeSliceDurationMinutes;
+	}
+
+	public void setTimeSliceDurationMinutes(final int timeSliceDurationMinutes) {
+		this.timeSliceDurationMinutes = timeSliceDurationMinutes;
 	}
 }
