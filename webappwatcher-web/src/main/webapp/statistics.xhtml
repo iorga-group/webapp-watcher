@@ -14,6 +14,7 @@
 		<h:outputScript library="js" name="jquery.flot.crosshair.min.js"/>
 		<h:outputScript library="js" name="jquery.flot.navigate.min.js"/>
 		<h:outputScript library="js" name="jquery.flot.stack.min.js"/>
+		<h:outputScript library="js" name="jquery.flot.axislabels.js"/>
 		<h:outputScript library="js" name="utils.js"/>
 		<h:outputScript library="js" name="statistics.js"/>
 		<style>
@@ -31,6 +32,14 @@
 	
 	<h:body>
 		<p:panel id="statistics" header="Statistics">
+			<h:form enctype="multipart/form-data">
+				<p:fileUpload
+					fileUploadListener="#{statisticsAction.handleFileUpload}"
+					mode="advanced"
+					update=":statistics"
+					auto="true"
+					allowTypes="/(\.|\/)(xz|gz)$/" />
+			</h:form>
 			<p:fieldset legend="Files">
 				<ul>
 					<ui:repeat var="uploadedFile" value="#{statisticsAction.uploadedFiles}">
@@ -47,14 +56,6 @@
 					</p:fieldset>
 				</h:form>
 			</p:fieldset>
-			<h:form enctype="multipart/form-data">
-				<p:fileUpload
-					fileUploadListener="#{statisticsAction.handleFileUpload}"
-					mode="advanced"
-					update=":statistics"
-					auto="true"
-					allowTypes="/(\.|\/)(xz|gz)$/" />
-			</h:form>
 		</p:panel>
 		<p:panel header="Graphs" rendered="#{not empty statisticsAction.durationsFor1clickSeriesJson}">
 			<div id="placeholder" style="width:100%;height:600px;"></div>
@@ -62,8 +63,10 @@
 			$(function () {
 				var cpuUsageValues = [#{statisticsAction.cpuUsageJsonValues}];
 				var memoryUsageValues = [#{statisticsAction.memoryUsageJsonValues}];
+				var nbUsersValues = [#{statisticsAction.nbUsersJsonValues}];
+				var durationsFor1clickMedianJson = [#{statisticsAction.durationsFor1clickMedianJsonValues}];
 				var durationsFor1clickSeriesJson = [#{statisticsAction.durationsFor1clickSeriesJson}];
-				initStatistics(cpuUsageValues, memoryUsageValues, durationsFor1clickSeriesJson);
+				initStatistics(cpuUsageValues, memoryUsageValues, durationsFor1clickSeriesJson, nbUsersValues, durationsFor1clickMedianJson);
 			});
 			</script>
 		</p:panel>

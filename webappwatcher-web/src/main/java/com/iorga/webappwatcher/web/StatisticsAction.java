@@ -56,6 +56,8 @@ public class StatisticsAction implements Serializable {
 	private DurationPerPrincipalStats durationPerPrincipalStats;
 	private String cpuUsageJsonValues;
 	private String memoryUsageJsonValues;
+	private String nbUsersJsonValues;
+	private String durationsFor1clickMedianJsonValues;
 	private String durationsFor1clickSeriesJson;
 	private int lastNbItemsForDispersionTables;
 	private int lastTimeSliceDurationMinutes;
@@ -180,6 +182,9 @@ public class StatisticsAction implements Serializable {
 		if (lastTimeSliceDurationMinutes != timeSliceDurationMinutes || lastNbItemsForDispersionTables != nbItemsForDispersionTables) {
 			final StringBuilder cpuUsageJsonBuilder = new StringBuilder();
 			final StringBuilder memoryUsageJsonBuilder = new StringBuilder();
+			final StringBuilder nbUsersJsonBuilder = new StringBuilder();
+			final StringBuilder durationsFor1clickMedianJsonBuilder = new StringBuilder();
+
 			// now let's build the json series
 			final double[] yValues = new double[nbItemsForDispersionTables];
 			final StringBuilder[] seriesBuilders = new StringBuilder[nbItemsForDispersionTables];
@@ -219,6 +224,8 @@ public class StatisticsAction implements Serializable {
 				// adding cpu & memory info
 				writeToJsonBuilderAndAppendNullBeforeIfNecessary(middleTimeSliceTime, timeSlice.cpuUsage.getMean(), cpuUsageJsonBuilder, firstSlice, mustAppendNullForPrevious, previousTimeSlice);
 				writeToJsonBuilderAndAppendNullBeforeIfNecessary(middleTimeSliceTime, timeSlice.memoryUsage.getMean(), memoryUsageJsonBuilder, firstSlice, mustAppendNullForPrevious, previousTimeSlice);
+				writeToJsonBuilderAndAppendNullBeforeIfNecessary(middleTimeSliceTime, timeSlice.statsPerPrincipal.size(), nbUsersJsonBuilder, firstSlice, mustAppendNullForPrevious, previousTimeSlice);
+				writeToJsonBuilderAndAppendNullBeforeIfNecessary(middleTimeSliceTime, timeSlice.durationsFor1click.getPercentile(50), durationsFor1clickMedianJsonBuilder, firstSlice, mustAppendNullForPrevious, previousTimeSlice);
 
 				firstSlice = false;
 				previousTimeSlice = timeSlice;
@@ -234,6 +241,8 @@ public class StatisticsAction implements Serializable {
 			durationsFor1clickSeriesJson = durationsFor1clickSeriesBuilder.toString();
 			cpuUsageJsonValues = cpuUsageJsonBuilder.toString();
 			memoryUsageJsonValues = memoryUsageJsonBuilder.toString();
+			nbUsersJsonValues = nbUsersJsonBuilder.toString();
+			durationsFor1clickMedianJsonValues = durationsFor1clickMedianJsonBuilder.toString();
 
 			lastNbItemsForDispersionTables = nbItemsForDispersionTables;
 			lastTimeSliceDurationMinutes = timeSliceDurationMinutes;
@@ -332,16 +341,6 @@ public class StatisticsAction implements Serializable {
 				try {
 					while ((eventLog = readEventLog(objectInputStream)) != null) {
 						readRequestEventLogForDurationPerPrincipalStats(eventLog, durationPerPrincipalStats, requestActionFilter, timeSliceDurationMillis);
-
-//						if (eventLog instanceof RequestEventLog) {
-//							final RequestEventLog requestEventLog = (RequestEventLog) eventLog;
-//
-//							readRequestEventLogForDurationPerPrincipalStats(requestEventLog, durationPerPrincipalStats, requestActionFilter, timeSliceDurationMillis);
-//						} else if (eventLog instanceof SystemEventLog && cpuUsageJsonBuilder != null && memoryUsageJsonBuilder != null) {
-//							final SystemEventLog systemEventLog = (SystemEventLog) eventLog;
-//							writeToJsonBuilder(systemEventLog.getDate(), systemEventLog.getCpuUsage(), cpuUsageJsonBuilder);
-//							writeToJsonBuilder(systemEventLog.getDate(), systemEventLog.getHeapMemoryUsed() + systemEventLog.getNonHeapMemoryUsed(), memoryUsageJsonBuilder);
-//						}
 					}
 				} catch (final EOFException e) {
 					// Normal end of the read file
@@ -352,16 +351,8 @@ public class StatisticsAction implements Serializable {
 		}
 	}
 
-	private void writeToJsonBuilder(final Date date, final Object value, final StringBuilder jsonBuilder) {
-		writeToJsonBuilder(date.getTime(), value, jsonBuilder);
-	}
-
 	private void writeToJsonBuilder(final Date date, final Object value, final StringBuilder jsonBuilder, final boolean firstValue) {
 		writeToJsonBuilder(date.getTime(), value, jsonBuilder, firstValue);
-	}
-
-	private void writeToJsonBuilder(final long time, final Object value, final StringBuilder jsonBuilder) {
-		writeToJsonBuilder(time, value, jsonBuilder, jsonBuilder.length() > 0);
 	}
 
 	private void writeToJsonBuilder(final long time, final Object value, final StringBuilder jsonBuilder, final boolean firstValue) {
@@ -848,6 +839,8 @@ public class StatisticsAction implements Serializable {
 		this.cpuUsageJsonValues = null;
 		this.memoryUsageJsonValues = null;
 		this.durationsFor1clickSeriesJson = null;
+		this.nbUsersJsonValues = null;
+		this.durationsFor1clickMedianJsonValues = null;
 		this.lastNbItemsForDispersionTables = 0;
 	}
 
@@ -886,5 +879,13 @@ public class StatisticsAction implements Serializable {
 
 	public void setTimeSliceDurationMinutes(final int timeSliceDurationMinutes) {
 		this.timeSliceDurationMinutes = timeSliceDurationMinutes;
+	}
+
+	public String getNbUsersJsonValues() {
+		return nbUsersJsonValues;
+	}
+
+	public String getDurationsFor1clickMedianJsonValues() {
+		return durationsFor1clickMedianJsonValues;
 	}
 }
