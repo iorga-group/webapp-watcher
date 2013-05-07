@@ -66,7 +66,6 @@ public class StatisticsAction implements Serializable {
 		private Date startDate = null;
 		private final Set<String> principals = new HashSet<String>();
 		private final DescriptiveStatistics durations = new DescriptiveStatistics();
-		private final DescriptiveStatistics releventDurations = new DescriptiveStatistics();
 	}
 
 	public static class DurationPerPrincipalStats {
@@ -144,7 +143,7 @@ public class StatisticsAction implements Serializable {
 
 		final ServletOutputStream outputStream = response.getOutputStream();
 
-		outputStream.println("Start date;End date;Distinct users;Number of requests;Duration;Average;Median;90c;Relevent number of requests;Relevent duration;Relevent Average;Relevent Median;Relevent 90c");
+		outputStream.println("Start date;End date;Distinct users;Number of requests;Duration;Average;Median;90c;Min;Max");
 
 		for (final UploadedFile uploadedFile : uploadedFiles) {
 			readEventLogsForDurationStats(outputStream, uploadedFile.getInputstream(), uploadedFile.getFileName(), new JSF21AndRichFaces4RequestActionFilter());
@@ -300,9 +299,6 @@ public class StatisticsAction implements Serializable {
 			durationMillis = NULL_AFTER_PROCESS_DATE_DURATION_MILLIS;
 		}
 		csvLine.durations.addValue(durationMillis);
-		if (durationMillis > RELEVENT_REQUEST_DURATION_THRESHOLD) {
-			csvLine.releventDurations.addValue(durationMillis);
-		}
 		csvLine.principals.add(requestEventLog.getPrincipal());
 
 		return csvLine;
@@ -311,9 +307,8 @@ public class StatisticsAction implements Serializable {
 	private void writeCsvDurationStatsLine(final CSVDurationStatsLine csvLine, final RequestEventLog currentRequestEventLog, final ServletOutputStream outputStream) throws IOException {
 		if (csvLine.startDate != null) { // else the csvLine has never been filled
 			final DescriptiveStatistics durations = csvLine.durations;
-			final DescriptiveStatistics releventDurations = csvLine.releventDurations;
 			final StringBuilder line = new StringBuilder();
-			// Processing "Start date;End date;Distinct users;Number of requests;Duration;Average;Median;90c;Relevent number of requests;Relevent duration;Relevent Average;Relevent Median;Relevent 90c"
+			// Processing "Start date;End date;Distinct users;Number of requests;Duration;Average;Median;90c;Min;Max"
 			final Date currentRequestDate = currentRequestEventLog.getDate();
 			line.append(dateFormatter.format(csvLine.startDate)).append(";")
 				.append(dateFormatter.format(currentRequestDate != null ? currentRequestDate : csvLine.startDate)).append(";")
@@ -323,11 +318,8 @@ public class StatisticsAction implements Serializable {
 				.append((int)durations.getMean()).append(";")
 				.append((int)durations.getPercentile(50)).append(";")
 				.append((int)durations.getPercentile(90)).append(";")
-				.append(releventDurations.getN()).append(";")
-				.append((int)releventDurations.getSum()).append(";")
-				.append((int)releventDurations.getMean()).append(";")
-				.append((int)releventDurations.getPercentile(50)).append(";")
-				.append((int)releventDurations.getPercentile(90)).append(";");
+				.append((int)durations.getMin()).append(";")
+				.append((int)durations.getMax()).append(";");
 
 			outputStream.println(line.toString());
 		}
