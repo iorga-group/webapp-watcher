@@ -44,7 +44,6 @@ public class StatisticsAction implements Serializable {
 	private static final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private static final long AGGLOMERATION_DURATION_MILLIS = 10 * 60 * 1000;
 	private static final long NULL_AFTER_PROCESS_DATE_DURATION_MILLIS = 45 * 1000;
-	private static final long RELEVENT_REQUEST_DURATION_THRESHOLD = 500;
 	private static final long TIME_SLICE_DURATION_MILLIS = 30 * 60 * 1000; // 30mn
 	private static final int MAX_ITEMS_FOR_DISPERSION_TABLES = 12;
 
@@ -61,6 +60,8 @@ public class StatisticsAction implements Serializable {
 	private String durationsFor1clickSeriesJson;
 	private int lastNbItemsForDispersionTables;
 	private int lastTimeSliceDurationMinutes;
+
+	private int minMillisForSlowRequests = 100000;
 
 	private static class CSVDurationStatsLine {
 		private Date startDate = null;
@@ -139,7 +140,7 @@ public class StatisticsAction implements Serializable {
 		response.reset(); // Some JSF component library or some Filter might have set some headers in the buffer beforehand. We want to get rid of them, else it may collide.
 		response.setContentType("text/csv"); // Check http://www.w3schools.com/media/media_mimeref.asp for all types. Use if necessary ServletContext#getMimeType() for auto-detection based on filename.
 //		response.setContentLength(contentLength); // Set it with the file size. This header is optional. It will work if it's omitted, but the download progress will be unknown.
-		response.setHeader("Content-Disposition", "attachment; filename=\"extract.csv\""); // The Save As popup magic is done here. You can give it any file name you want, this only won't work in MSIE, it will use current request URL as file name instead.
+		response.setHeader("Content-Disposition", "attachment; filename=\"extract_duration.csv\""); // The Save As popup magic is done here. You can give it any file name you want, this only won't work in MSIE, it will use current request URL as file name instead.
 
 		final ServletOutputStream outputStream = response.getOutputStream();
 
@@ -158,7 +159,7 @@ public class StatisticsAction implements Serializable {
 		final HttpServletResponse response = (HttpServletResponse) facesContext.getExternalContext().getResponse();
 		response.reset(); // Some JSF component library or some Filter might have set some headers in the buffer beforehand. We want to get rid of them, else it may collide.
 		response.setContentType("text/csv"); // Check http://www.w3schools.com/media/media_mimeref.asp for all types. Use if necessary ServletContext#getMimeType() for auto-detection based on filename.
-		response.setHeader("Content-Disposition", "attachment; filename=\"extract.csv\""); // The Save As popup magic is done here. You can give it any file name you want, this only won't work in MSIE, it will use current request URL as file name instead.
+		response.setHeader("Content-Disposition", "attachment; filename=\"extract_duration_per_principal.csv\""); // The Save As popup magic is done here. You can give it any file name you want, this only won't work in MSIE, it will use current request URL as file name instead.
 
 
 		final DurationPerPrincipalStats durationPerPrincipalStats = new DurationPerPrincipalStats();
@@ -167,6 +168,40 @@ public class StatisticsAction implements Serializable {
 
 		final ServletOutputStream outputStream = response.getOutputStream();
 		writeDurationPerPrincpalStats(durationPerPrincipalStats, outputStream);
+
+		facesContext.responseComplete();
+	}
+
+	public void extractSlowRequests() throws IOException, ClassNotFoundException {
+		final FacesContext facesContext = FacesContext.getCurrentInstance();
+
+		final HttpServletResponse response = (HttpServletResponse) facesContext.getExternalContext().getResponse();
+		response.reset(); // Some JSF component library or some Filter might have set some headers in the buffer beforehand. We want to get rid of them, else it may collide.
+		response.setContentType("text/plain"); // Check http://www.w3schools.com/media/media_mimeref.asp for all types. Use if necessary ServletContext#getMimeType() for auto-detection based on filename.
+		response.setHeader("Content-Disposition", "attachment; filename=\"slow_requests.txt\""); // The Save As popup magic is done here. You can give it any file name you want, this only won't work in MSIE, it will use current request URL as file name instead.
+
+		final ServletOutputStream outputStream = response.getOutputStream();
+
+		for (final UploadedFile uploadedFile : uploadedFiles) {
+			final ObjectInputStream objectInputStream = EventLogManager.readLog(uploadedFile.getInputstream(), uploadedFile.getFileName());
+			try {
+				EventLog eventLog;
+				try {
+					while ((eventLog = readEventLog(objectInputStream)) != null) {
+						if (eventLog instanceof RequestEventLog) {
+							final Long durationMillis = ((RequestEventLog) eventLog).getDurationMillis();
+							if (durationMillis != null && durationMillis >= minMillisForSlowRequests) {
+								outputStream.println(eventLog.toString());
+							}
+						}
+					}
+				} catch (final EOFException e) {
+					// Normal end of the read file
+				}
+			} finally {
+				objectInputStream.close();
+			}
+		}
 
 		facesContext.responseComplete();
 	}
@@ -879,5 +914,13 @@ public class StatisticsAction implements Serializable {
 
 	public String getDurationsFor1clickMedianJsonValues() {
 		return durationsFor1clickMedianJsonValues;
+	}
+
+	public int getMinMillisForSlowRequests() {
+		return minMillisForSlowRequests;
+	}
+
+	public void setMinMillisForSlowRequests(final int minMillisForSlowRequests) {
+		this.minMillisForSlowRequests = minMillisForSlowRequests;
 	}
 }

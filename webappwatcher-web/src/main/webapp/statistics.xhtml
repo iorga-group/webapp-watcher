@@ -49,6 +49,14 @@
 				<h:form>
 					<h:commandButton value="Extract duration stats" action="#{statisticsAction.extractDurationStats}"/>
 					<h:commandButton value="Extract duration stats per principal" action="#{statisticsAction.extractDurationPerPrincipalStats()}"/>
+				</h:form>
+				<h:form>
+					<p:fieldset legend="Slow requests">
+						<p>Min millis : <h:inputText value="#{statisticsAction.minMillisForSlowRequests}" /></p>
+						<h:commandButton value="Extract !" action="#{statisticsAction.extractSlowRequests()}"/>
+					</p:fieldset>
+				</h:form>
+				<h:form>
 					<p:fieldset legend="Graph">
 						<p>Nb of slices : <h:inputText value="#{statisticsAction.nbItemsForDispersionTables}" /></p>
 						<p>Minutes by slice : <h:inputText value="#{statisticsAction.timeSliceDurationMinutes}" /></p>
