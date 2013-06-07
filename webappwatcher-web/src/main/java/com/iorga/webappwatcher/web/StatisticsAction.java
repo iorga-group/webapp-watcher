@@ -1,15 +1,19 @@
 package com.iorga.webappwatcher.web;
 
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,13 +24,18 @@ import javax.faces.context.FacesContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.model.UploadedFile;
 import org.tukaani.xz.CorruptedInputException;
 
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
@@ -130,6 +139,70 @@ public class StatisticsAction implements Serializable {
 		}
 	}
 
+	private abstract class UploadedFileReader {
+
+		protected void init() {}
+
+		public void readUploadedFiles() throws IOException, ClassNotFoundException {
+			init();
+			for (final UploadedFile uploadedFile : uploadedFiles) {
+				handleUploadedFileInputStream(uploadedFile.getInputstream(), uploadedFile.getFileName());
+			}
+		}
+
+		protected void handleUploadedFileInputStream(final InputStream uploadedFileinputstream, final String uploadedFileName) throws IOException, ClassNotFoundException {
+			if (uploadedFileName.endsWith(".zip")) {
+				// it's a zip, we must iterate on each files inside
+				// we will first copy the zip file in order to access it via ZipFile
+				final File tempZipFile = File.createTempFile("waw", ".zip");
+				IOUtils.copy(uploadedFileinputstream, new FileOutputStream(tempZipFile));
+				try {
+					final ZipFile zipFile = new ZipFile(tempZipFile);
+					// sort the files in order to read them ascending
+					final List<ZipArchiveEntry> sortedZipArchiveEntries = Ordering.from(new Comparator<ZipArchiveEntry>() {
+						@Override
+						public int compare(final ZipArchiveEntry o1, final ZipArchiveEntry o2) {
+							return o1.getName().compareTo(o2.getName());
+						}
+					}).sortedCopy(new Iterable<ZipArchiveEntry>() {
+						@Override
+						public Iterator<ZipArchiveEntry> iterator() {
+							return Iterators.forEnumeration(zipFile.getEntries());
+						}
+					});
+					for (final ZipArchiveEntry zipArchiveEntry : sortedZipArchiveEntries) {
+						handleInputStreamAndFileName(zipFile.getInputStream(zipArchiveEntry), zipArchiveEntry.getName());
+					}
+				} finally {
+					tempZipFile.delete();
+				}
+			} else {
+				handleInputStreamAndFileName(uploadedFileinputstream, uploadedFileName);
+			}
+		}
+
+		private void handleInputStreamAndFileName(final InputStream uploadedFileinputstream, final String uploadedFileName) throws IOException, ClassNotFoundException, FileNotFoundException {
+			handleObjectInputStream(EventLogManager.readLog(uploadedFileinputstream, uploadedFileName));
+		}
+
+		private void handleObjectInputStream(final ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException {
+			try {
+				EventLog eventLog;
+				try {
+					while ((eventLog = readEventLog(objectInputStream)) != null) {
+						handleEventLog(eventLog);
+					}
+				} catch (final EOFException e) {
+					// Normal end of the read file
+				}
+			} finally {
+				objectInputStream.close();
+			}
+		}
+
+		protected abstract void handleEventLog(EventLog eventLog) throws IOException;
+	}
+
 	/// Actions ///
 	//////////////
 	public void extractDurationStats() throws IOException, ClassNotFoundException {
@@ -146,9 +219,23 @@ public class StatisticsAction implements Serializable {
 
 		outputStream.println("Start date;End date;Distinct users;Number of requests;Duration;Average;Median;90c;Min;Max");
 
-		for (final UploadedFile uploadedFile : uploadedFiles) {
-			readEventLogsForDurationStats(outputStream, uploadedFile.getInputstream(), uploadedFile.getFileName(), new JSF21AndRichFaces4RequestActionFilter());
-		}
+		new UploadedFileReader() {
+			CSVDurationStatsLine csvLine = new CSVDurationStatsLine();
+
+			RequestEventLog requestEventLog = null;
+
+			RequestActionFilter requestActionFilter = new JSF21AndRichFaces4RequestActionFilter();
+
+			@Override
+			protected void handleEventLog(final EventLog eventLog) throws IOException {
+				if (eventLog instanceof RequestEventLog) {
+					requestEventLog = (RequestEventLog) eventLog;
+					if (requestActionFilter.isAnActionRequest(requestEventLog)) {
+						csvLine = readRequestEventLogForDurationStats(requestEventLog, csvLine, outputStream);
+					}
+				}
+			}
+		}.readUploadedFiles();
 
 		facesContext.responseComplete();
 	}
@@ -164,7 +251,15 @@ public class StatisticsAction implements Serializable {
 
 		final DurationPerPrincipalStats durationPerPrincipalStats = new DurationPerPrincipalStats();
 
-		readEventLogsForDurationPerPrincipalStats(durationPerPrincipalStats, new JSF21AndRichFaces4RequestActionFilter(), TIME_SLICE_DURATION_MILLIS);
+		new UploadedFileReader() {
+
+			RequestActionFilter requestActionFilter = new JSF21AndRichFaces4RequestActionFilter();
+
+			@Override
+			protected void handleEventLog(final EventLog eventLog) throws IOException {
+				readRequestEventLogForDurationPerPrincipalStats(eventLog, durationPerPrincipalStats, requestActionFilter, TIME_SLICE_DURATION_MILLIS);
+			}
+		}.readUploadedFiles();
 
 		final ServletOutputStream outputStream = response.getOutputStream();
 		writeDurationPerPrincpalStats(durationPerPrincipalStats, outputStream);
@@ -182,26 +277,15 @@ public class StatisticsAction implements Serializable {
 
 		final ServletOutputStream outputStream = response.getOutputStream();
 
-		for (final UploadedFile uploadedFile : uploadedFiles) {
-			final ObjectInputStream objectInputStream = EventLogManager.readLog(uploadedFile.getInputstream(), uploadedFile.getFileName());
-			try {
-				EventLog eventLog;
-				try {
-					while ((eventLog = readEventLog(objectInputStream)) != null) {
-						if (eventLog instanceof RequestEventLog) {
-							final Long durationMillis = ((RequestEventLog) eventLog).getDurationMillis();
-							if (durationMillis != null && durationMillis >= minMillisForSlowRequests) {
-								outputStream.println(eventLog.toString());
-							}
-						}
-					}
-				} catch (final EOFException e) {
-					// Normal end of the read file
+		new UploadedFileReader() {
+			@Override
+			protected void handleEventLog(final EventLog eventLog) throws IOException {
+				final Long durationMillis = ((RequestEventLog) eventLog).getDurationMillis();
+				if (durationMillis != null && durationMillis >= minMillisForSlowRequests) {
+					outputStream.println(eventLog.toString());
 				}
-			} finally {
-				objectInputStream.close();
 			}
-		}
+		}.readUploadedFiles();
 
 		facesContext.responseComplete();
 	}
@@ -210,7 +294,15 @@ public class StatisticsAction implements Serializable {
 		durationPerPrincipalStats = new DurationPerPrincipalStats();
 
 		if (lastTimeSliceDurationMinutes != timeSliceDurationMinutes) {
-			readEventLogsForDurationPerPrincipalStats(durationPerPrincipalStats, new JSF21AndRichFaces4RequestActionFilter(), timeSliceDurationMinutes * 1000 * 60);
+			new UploadedFileReader() {
+				RequestActionFilter requestActionFilter = new JSF21AndRichFaces4RequestActionFilter();
+				long timeSliceDurationMillis = timeSliceDurationMinutes * 1000 * 60;
+
+				@Override
+				protected void handleEventLog(final EventLog eventLog) throws IOException {
+					readRequestEventLogForDurationPerPrincipalStats(eventLog, durationPerPrincipalStats, requestActionFilter, timeSliceDurationMillis);
+				}
+			}.readUploadedFiles();
 		}
 
 		if (lastTimeSliceDurationMinutes != timeSliceDurationMinutes || lastNbItemsForDispersionTables != nbItemsForDispersionTables) {
@@ -293,31 +385,6 @@ public class StatisticsAction implements Serializable {
 
 	/// Utils ///
 	////////////
-	private void readEventLogsForDurationStats(final ServletOutputStream outputStream, final InputStream inputstream, final String fileName, final RequestActionFilter requestActionFilter) throws IOException, ClassNotFoundException {
-		final ObjectInputStream objectInputStream = EventLogManager.readLog(inputstream, fileName);
-		try {
-			CSVDurationStatsLine csvLine = new CSVDurationStatsLine();
-
-			EventLog eventLog;
-			RequestEventLog requestEventLog = null;
-			try {
-				while ((eventLog = readEventLog(objectInputStream)) != null) {
-					if (eventLog instanceof RequestEventLog) {
-						requestEventLog = (RequestEventLog) eventLog;
-						if (requestActionFilter.isAnActionRequest(requestEventLog)) {
-							csvLine = readRequestEventLogForDurationStats(requestEventLog, csvLine, outputStream);
-						}
-					}
-				}
-			} catch (final EOFException e) {
-				// Normal end of the read file
-			}
-			writeCsvDurationStatsLine(csvLine, requestEventLog, outputStream);
-		} finally {
-			objectInputStream.close();
-		}
-	}
-
 	private CSVDurationStatsLine readRequestEventLogForDurationStats(final RequestEventLog requestEventLog, CSVDurationStatsLine csvLine, final ServletOutputStream outputStream) throws IOException {
 		final Date date = requestEventLog.getDate();
 		if (csvLine.startDate == null) {
@@ -357,24 +424,6 @@ public class StatisticsAction implements Serializable {
 				.append((int)durations.getMax()).append(";");
 
 			outputStream.println(line.toString());
-		}
-	}
-
-	private void readEventLogsForDurationPerPrincipalStats(final DurationPerPrincipalStats durationPerPrincipalStats, final RequestActionFilter requestActionFilter, final long timeSliceDurationMillis) throws FileNotFoundException, IOException, ClassNotFoundException {
-		for (final UploadedFile uploadedFile : uploadedFiles) {
-			final ObjectInputStream objectInputStream = EventLogManager.readLog(uploadedFile.getInputstream(), uploadedFile.getFileName());
-			try {
-				EventLog eventLog;
-				try {
-					while ((eventLog = readEventLog(objectInputStream)) != null) {
-						readRequestEventLogForDurationPerPrincipalStats(eventLog, durationPerPrincipalStats, requestActionFilter, timeSliceDurationMillis);
-					}
-				} catch (final EOFException e) {
-					// Normal end of the read file
-				}
-			} finally {
-				objectInputStream.close();
-			}
 		}
 	}
 

@@ -378,16 +378,19 @@ public class EventLogManager {
 		}
 	}
 
-	public static ObjectInputStream readLog(final InputStream inputStream, final String fileName) throws FileNotFoundException, IOException {
-		final InputStream zipInputStream;
+	public static ObjectInputStream readLog(InputStream inputStream, String fileName) throws FileNotFoundException, IOException {
 		if (fileName.endsWith(".gz")) {
-			zipInputStream = new GZIPInputStream(inputStream);
+			inputStream = new GZIPInputStream(inputStream);
+			fileName = StringUtils.substringBeforeLast(fileName, ".gz");
 		} else if (fileName.endsWith(".xz")) {
-			zipInputStream = new XZInputStream(inputStream);
-		} else {
-			throw new IllegalArgumentException("Filename must end with .gz or .xz");
+			inputStream = new XZInputStream(inputStream);
+			fileName = StringUtils.substringBeforeLast(fileName, ".xz");
 		}
-		return new ObjectInputStream(zipInputStream);
+		if (fileName.endsWith(".ser")) {
+			return new ObjectInputStream(inputStream);
+		} else {
+			throw new IllegalArgumentException("Filename must end with .ser, .ser.gz or .ser.xz");
+		}
 	}
 
 	public static ObjectInputStream readLog(final String filePath) throws FileNotFoundException, IOException {
