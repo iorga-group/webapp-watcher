@@ -58,6 +58,8 @@ Configuration
 *-------------------+--------------+---------+------------------------------------+
 | <<<eventLogRetentionMillis>>> | Durée de rétention des évènements non encore logués. Quand une demande d'écriture est faite, les logs de toute cette durée sont écris. | 5 * 60 * 1000 (=5mn) |
 *-------------------+--------------+---------+------------------------------------+
+| <<<maxLogFileSizeMo>>> | Taille maximum autorisée d'un fichier de log (en Mo). | <<<100>>> |
+*-------------------+--------------+---------+------------------------------------+
 | <<<eventLogWatchers>>> | Liste de nom de classes (séparées par des virgules) de "Watchers", déclencheurs d'écriture du log. Voir {{{Le_paramtre_eventLogWatchers}le paragraphe dédié}}. | <<<com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher, com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher, com.iorga.webappwatcher.watcher.RequestDurationWatcher, com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher>>> |
 *-------------------+--------------+---------+------------------------------------+
 | <<<criticalCpuUsage>>> | Seuil d'utilisation CPU (en %, float) au delà duquel vont être logués toute la queue d'évènements. | 1,5 CPU (donc 100 / nb_CPU * 1,5) | <<<com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher>>> |

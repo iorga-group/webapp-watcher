@@ -1,11 +1,13 @@
 package com.iorga.webappwatcher;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -26,11 +28,14 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.iorga.webappwatcher.eventlog.ExcludedRequestsEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
@@ -65,6 +70,7 @@ public class RequestLogFilter implements Filter {
 		addParameterHandler("waitForEventLogToCompleteMillis", EventLogManager.class);
 		addParameterHandler("logPath", EventLogManager.class);
 		addParameterHandler("eventLogRetentionMillis", EventLogManager.class);
+		addParameterHandler("maxLogFileSizeMo", EventLogManager.class);
 		addInstanceSetParameterHandler("eventLogWatchers", EventLogManager.class, Object.class);
 		// initParameter for CpuCriticalUsageWatcher
 		addParameterHandler("criticalCpuUsage", CpuCriticalUsageWatcher.class);
@@ -136,16 +142,16 @@ public class RequestLogFilter implements Filter {
 			}
 			@Override
 			protected String toHtmlInForm(final Map<Class<?>, Object> commandContext) {
-				final StringBuilder stringBuilder = new StringBuilder();
+				final StringBuilder htmlBuilder = new StringBuilder();
 				final RequestLogFilter logFilter = getRequestLogFilter(commandContext);
 				for (final Entry<String, ParameterHandler<?, ?>> parameterHandlerEntry : parameterHandlers.entrySet()) {
 					final String parameterName = parameterHandlerEntry.getKey();
 					final ParameterHandler<?, ?> parameterHandler = parameterHandlerEntry.getValue();
-					stringBuilder.append(parameterName)
+					htmlBuilder.append(parameterName)
 						.append(": <input type=\"text\" name=\"").append(parameterName)
 							.append("\" value=\"").append(logFilter.getParameterStringValue(parameterHandler)).append("\" /><br />");
 				}
-				return stringBuilder.append(super.toHtmlInForm(commandContext)).toString();
+				return htmlBuilder.append(super.toHtmlInForm(commandContext)).toString();
 			}
 		});
 		addCommandHandler(new BasicCommandHandler("printParameters") {
@@ -159,6 +165,34 @@ public class RequestLogFilter implements Filter {
 					logFilter.writeParameter(writer, parameterHandlerEntry.getKey(), parameterHandlerEntry.getValue());
 				}
 				return true;
+			}
+		});
+		addCommandHandler(new BasicCommandHandler("downloadEventLogs") {
+			@Override
+			public boolean execute(final Map<Class<?>, Object> commandContext) throws Exception {
+				final HttpServletRequest request = getHttpServletRequest(commandContext);
+				final HttpServletResponse response = getHttpServletResponse(commandContext);
+				final String[] files = request.getParameterValues("files");
+				EventLogManager.getInstance().writeEventLogsToHttpServletResponse(response, Lists.newArrayList(files));
+				return true;
+			}
+			@Override
+			protected String toHtmlInForm(final Map<Class<?>, Object> commandContext) {
+				final StringBuilder htmlBuilder = new StringBuilder();
+				// List the files with a checkbox each time
+				final List<File> eventLogsInThePath = Ordering.from(new Comparator<File>() {
+					@Override
+					public int compare(final File o1, final File o2) {
+						return o1.getName().compareTo(o2.getName());
+					}
+				}).sortedCopy(EventLogManager.getInstance().listEventLogsInThePath());
+				for (final File eventLog : eventLogsInThePath) {
+					final String eventLogName = eventLog.getName();
+					htmlBuilder.append("<input type=\"checkbox\" name=\"files\" value=\"").append(eventLogName).append("\" />");
+					final long eventLogLength = eventLog.length();
+					htmlBuilder.append(eventLogName).append(" (").append(FileUtils.byteCountToDisplaySize(eventLogLength)).append(")<br />");
+				}
+				return htmlBuilder.append(super.toHtmlInForm(commandContext)).toString();
 			}
 		});
 		addCommandHandler(new BasicCommandHandler("downloadEventLog") {
@@ -314,7 +348,7 @@ public class RequestLogFilter implements Filter {
 			if (matches) {
 				try {
 					logRequest.setThrowableStackTraceAsString(Throwables.getStackTraceAsString(t));
-				} catch (Throwable t2) {
+				} catch (final Throwable t2) {
 					logRequest.setThrowableStackTraceAsString("Exception in thread \""+Thread.currentThread().getName()+"\" "+t.getClass().getName()+" couldn't be got as string due to "+t2.getClass().getName());
 				}
 			}

@@ -22,11 +22,11 @@
 		<version.commons-io>2.4</version.commons-io>
 		<version.commons-fileupload>1.2.2</version.commons-fileupload>
 		<version.commons-math3>3.1.1</version.commons-math3>
-		<version.xz>1.1</version.xz>
 		<version.primefaces>3.5</version.primefaces>
 		<version.guava>13.0.1</version.guava>
 		<version.slf4j>1.7.1</version.slf4j>
 		<version.mail>1.4.4</version.mail>
+		<version.commons-compress>1.5</version.commons-compress>
 	</properties>
 
 	<modules>
@@ -173,11 +173,6 @@ encoding/<project>=UTF-8]]>
 				<version>${version.primefaces}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.tukaani</groupId>
-				<artifactId>xz</artifactId>
-				<version>${version.xz}</version>
-			</dependency>
-			<dependency>
 				<groupId>com.google.guava</groupId>
 				<artifactId>guava</artifactId>
 				<version>${version.guava}</version>
@@ -186,6 +181,16 @@ encoding/<project>=UTF-8]]>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
 				<version>${version.slf4j}</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-fileupload</groupId>
+				<artifactId>commons-fileupload</artifactId>
+				<version>${version.commons-fileupload}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-compress</artifactId>
+				<version>${version.commons-compress}</version>
 			</dependency>
 
 			<!-- Runtime -->
@@ -220,11 +225,6 @@ encoding/<project>=UTF-8]]>
 				<artifactId>mail</artifactId>
 				<version>${version.mail}</version>
 				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>commons-fileupload</groupId>
-				<artifactId>commons-fileupload</artifactId>
-				<version>${version.commons-fileupload}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

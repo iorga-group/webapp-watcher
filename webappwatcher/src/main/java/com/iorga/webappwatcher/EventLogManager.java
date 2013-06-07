@@ -15,6 +15,7 @@ import java.lang.reflect.Constructor;
 import java.util.Date;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
@@ -22,12 +23,21 @@ import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveOutputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tukaani.xz.XZInputStream;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.iorga.webappwatcher.event.EventLogWillBeDeletedEvent;
 import com.iorga.webappwatcher.event.EventLogWillBeIgnoredUncompletedEvent;
@@ -66,6 +76,9 @@ public class EventLogManager {
 	private static final long SLEEP_BEFORE_CLEANING_EVENT_LOGS_QUEUE_MILLIS = 1000;
 
 	private long waitForEventLogToCompleteMillis = 5 * 60 * 1000;	// 5mn by default
+
+	private long maxLogFileSizeMo = 100;
+	private long eventsWritten = 0;
 
 	private final EventBus eventBus = new EventBus();
 //	private final Map<Class<? extends EventLogListener>, EventLogListener<?>> eventLogListeners = Maps.newHashMap();
@@ -128,7 +141,7 @@ public class EventLogManager {
 				EventLog firstEventLog = eventLogsQueue.peekFirst();
 				while (firstEventLog != null && (new Date().getTime() - firstEventLog.getDate().getTime()) > eventLogRetentionMillis) {
 					// There is one log too old, throw an event which indicates that this eventLog is too old and could be erased if not handled
-					eventBus.post(new EventLogWillBeDeletedEvent(firstEventLog));	// FIXME : l'instance n'est pas typée !!
+					eventBus.post(new EventLogWillBeDeletedEvent(firstEventLog));	// TODO : l'instance n'est pas typée !!
 					// now, lock the eventLogsQueue & remove if it's still the first one
 					synchronized (eventLogsQueueLock) {
 						final EventLog newFirstEventLog = eventLogsQueue.peekFirst();
@@ -274,6 +287,18 @@ public class EventLogManager {
 		synchronized (objectOutputStreamLogLock) {
 			final ObjectOutputStream objectOutputStream = getOrOpenLog();
 			objectOutputStream.writeObject(eventLog);
+			eventsWritten++;
+			if (eventsWritten % 1000 == 0) {
+				// every 1000 events, reset the outputstream in order to read it without requiring plenty of memory
+				objectOutputStream.reset();
+			}
+			if (eventsWritten % 50 == 0) {
+				// every 100 events written, let's flush & check if the file size is more than the max authorized
+				objectOutputStream.flush();
+				if (getEventLogLength() > maxLogFileSizeMo * 1024 * 1024) {
+					closeLog();
+				}
+			}
 		}
 	}
 
@@ -304,19 +329,43 @@ public class EventLogManager {
 		return new File(logPath+"."+DateFormatUtils.format(new Date(), "yyyyMMdd-HHmmss-SSS")+EVENT_LOG_FILE_EXTENSION);
 	}
 
+	private String generateLogFileNameWithoutExtension() {
+		return new File(logPath).getName()+"."+DateFormatUtils.format(new Date(), "yyyyMMdd-HHmmss-SSS");
+	}
+
+	private static class GZIPer implements Runnable {
+		private final File fileToGzip;
+
+		public GZIPer(final File fileToGzip) {
+			this.fileToGzip = fileToGzip;
+		}
+
+		@Override
+		public void run() {
+			final File gzFile = new File(fileToGzip.getAbsolutePath()+".gz");
+			OutputStream outputStream;
+			try {
+				outputStream = new GZIPOutputStream(new FileOutputStream(gzFile));
+				final InputStream inputStream = new FileInputStream(fileToGzip);
+				IOUtils.copy(inputStream, outputStream);
+				inputStream.close();
+				outputStream.close();
+				fileToGzip.delete();
+			} catch (final Exception e) {
+				log.error("Problem while gzipping "+fileToGzip, e);
+			}
+		}
+	}
+
 	public void closeLog() throws IOException {
 		synchronized (objectOutputStreamLogLock) {
 			if (objectOutputStreamLog != null) {
 				try {
 					objectOutputStreamLog.close();
 					rafLog.close();
-					final File gzFile = new File(logFile.getAbsolutePath()+".gz");
-					final OutputStream outputStream = new GZIPOutputStream(new FileOutputStream(gzFile));
-					final InputStream inputStream = new FileInputStream(logFile);
-					IOUtils.copy(inputStream, outputStream);
-					inputStream.close();
-					outputStream.close();
-					logFile.delete();
+					eventsWritten = 0;
+					// launch the zipping process in another thread
+					new Thread(new GZIPer(logFile), GZIPer.class.getName()).start();
 				} catch (final IOException e) {
 					throw new IOException("Problem while closing the event log", e);
 				} finally {
@@ -370,8 +419,102 @@ public class EventLogManager {
 				httpResponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
 				final PrintWriter writer = httpResponse.getWriter();
 				writer.write("No log available at the moment.");
-				writer.flush();
 			}
+		}
+	}
+
+	public Iterable<String> listEventLogsNameInThePath() {
+		return Iterables.transform(listEventLogsInThePath(), new Function<File, String>() {
+			@Override
+			public String apply(final File file) {
+				return file.getName();
+			}
+		});
+	}
+
+	public List<File> listEventLogsInThePath() {
+		final List<File> eventLogs = Lists.newArrayList();
+
+		final File[] files = getLogPathDirectory().listFiles();
+		for (final File file : files) {
+			final String fileName = file.getName();
+			if (fileName.endsWith(EVENT_LOG_FILE_EXTENSION) || fileName.endsWith(EVENT_LOG_FILE_EXTENSION+".gz")) {
+				eventLogs.add(file);
+			}
+		}
+
+		return eventLogs;
+	}
+
+	public void writeEventLogsToHttpServletResponse(final HttpServletResponse httpResponse, final Iterable<String> fileNames) throws IOException {
+		// First, we check if the given paths are in the log path
+		final Set<String> eventLogs = Sets.newHashSet(listEventLogsNameInThePath());
+		ArchiveOutputStream outputStream = null;
+		try {
+			for (final String fileName : fileNames) {
+				if (eventLogs.contains(fileName) && new File(getLogPathDirectory(), fileName).exists()) {
+					outputStream = writeEventLogToHttpServletResponse(httpResponse, fileName, outputStream);
+				}
+			}
+		} finally {
+			if (outputStream != null) {
+				outputStream.close();
+			}
+		}
+
+		if (outputStream == null) {
+			// No file were appended
+			httpResponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			final PrintWriter writer = httpResponse.getWriter();
+			writer.write("No log available at the moment.");
+		}
+	}
+
+	private ArchiveOutputStream writeEventLogToHttpServletResponse(final HttpServletResponse httpResponse, String fileName, ArchiveOutputStream outputStream) throws IOException {
+		if (outputStream == null) {
+			// First, let's open the outputStream
+			httpResponse.setStatus(HttpServletResponse.SC_OK);
+			httpResponse.setContentType("application/zip");
+			httpResponse.setHeader("Content-Disposition", "attachment; filename=\""+generateLogFileNameWithoutExtension()+".zip\"");
+
+			outputStream = new ZipArchiveOutputStream(httpResponse.getOutputStream());
+		}
+
+		final File file = new File(getLogPathDirectory(), fileName);
+		InputStream inputStream = new FileInputStream(file);
+		if (fileName.endsWith(".gz")) {
+			// it's a GZIP, let's decompress it
+			inputStream = new GZIPInputStream(inputStream);
+			fileName = StringUtils.substringBeforeLast(fileName, ".gz");
+		} else if (logFile != null && logFile.getName().equals(fileName)) {
+			// this is the current log file, we must lock the logFile
+			synchronized (objectOutputStreamLogLock) {
+				// before trying to download the log, we must first flush it
+				flushLog();
+				writeEventLogToHttpServletResponse(outputStream, inputStream, file, fileName);
+			}
+			return outputStream;
+		}
+
+		writeEventLogToHttpServletResponse(outputStream, inputStream, file, fileName);
+
+		return outputStream;
+	}
+
+	private void writeEventLogToHttpServletResponse(final ArchiveOutputStream outputStream, final InputStream inputStream, final File file, final String fileName) throws IOException {
+		ArchiveEntry archiveEntry = outputStream.createArchiveEntry(file, fileName);
+		if (!file.getName().equals(fileName)) {
+			// the original file is not the same as the final file, i.e. an original .gz which is uncompressed on the fly, we can't know the file size
+			archiveEntry = new ZipArchiveEntry(fileName);
+		}
+		outputStream.putArchiveEntry(archiveEntry);
+		try {
+			IOUtils.copy(inputStream, outputStream);
+		} catch (final Exception e) {
+			log.warn("Problem while copying file "+fileName, e);
+		} finally {
+			outputStream.closeArchiveEntry();
+			inputStream.close();
 		}
 	}
 
@@ -387,6 +530,10 @@ public class EventLogManager {
 
 	public String getLogPath() {
 		return logPath;
+	}
+
+	public File getLogPathDirectory() {
+		return new File(getLogPath()).getAbsoluteFile().getParentFile();
 	}
 
 	public void setLogPath(final String logPath) throws IOException {
@@ -426,6 +573,14 @@ public class EventLogManager {
 
 	public Set<?> getEventLogWatchers() {
 		return eventLogWatchers;
+	}
+
+	public long getMaxLogFileSizeMo() {
+		return maxLogFileSizeMo;
+	}
+
+	public void setMaxLogFileSizeMo(final long maxLogFileSizeMo) {
+		this.maxLogFileSizeMo = maxLogFileSizeMo;
 	}
 
 }
