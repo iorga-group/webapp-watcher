@@ -280,9 +280,11 @@ public class StatisticsAction implements Serializable {
 		new UploadedFileReader() {
 			@Override
 			protected void handleEventLog(final EventLog eventLog) throws IOException {
-				final Long durationMillis = ((RequestEventLog) eventLog).getDurationMillis();
-				if (durationMillis != null && durationMillis >= minMillisForSlowRequests) {
-					outputStream.println(eventLog.toString());
+				if (eventLog instanceof RequestEventLog) {
+					final Long durationMillis = ((RequestEventLog) eventLog).getDurationMillis();
+					if (durationMillis != null && durationMillis >= minMillisForSlowRequests) {
+						outputStream.println(eventLog.toString());
+					}
 				}
 			}
 		}.readUploadedFiles();
