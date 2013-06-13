@@ -48,7 +48,13 @@
 				</ul>
 				<h:form>
 					<h:commandButton value="Extract duration stats" action="#{statisticsAction.extractDurationStats}"/>
-					<h:commandButton value="Extract duration stats per principal" action="#{statisticsAction.extractDurationPerPrincipalStats()}"/>
+					<h:commandButton value="Extract duration stats per principal" action="#{statisticsAction.extractDurationPerPrincipalStats}"/>
+				</h:form>
+				<h:form>
+					<p:fieldset legend="Request times">
+						<p>Min millis to log : <h:inputText value="#{statisticsAction.minMillisToLogWhenExtractingRequestTime}" /></p>
+						<h:commandButton value="Extract !" action="#{statisticsAction.extractRequestTimes}"/>
+					</p:fieldset>
 				</h:form>
 				<h:form>
 					<p:fieldset legend="Slow requests">
@@ -60,6 +66,10 @@
 					<p:fieldset legend="Graph">
 						<p>Nb of slices : <h:inputText value="#{statisticsAction.nbItemsForDispersionTables}" /></p>
 						<p>Minutes by slice : <h:inputText value="#{statisticsAction.timeSliceDurationMinutes}" /></p>
+						<h:selectOneRadio value="#{statisticsAction.graphMode}">
+							<f:selectItem itemLabel="Auto" itemValue="auto"/>
+							<f:selectItem itemLabel="Static (median / 1s / 2s / 3s / 5s / 10s / 20s)" itemValue="static"/>
+						</h:selectOneRadio>
 						<h:commandButton value="Compute !" action="#{statisticsAction.computeGraph()}"/>
 					</p:fieldset>
 				</h:form>

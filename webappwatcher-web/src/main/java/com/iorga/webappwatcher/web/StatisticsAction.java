@@ -10,12 +10,14 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.faces.bean.ManagedBean;
@@ -27,14 +29,18 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.model.UploadedFile;
 import org.tukaani.xz.CorruptedInputException;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.iorga.webappwatcher.EventLogManager;
 import com.iorga.webappwatcher.eventlog.EventLog;
@@ -60,6 +66,11 @@ public class StatisticsAction implements Serializable {
 
 	private int nbItemsForDispersionTables = 6;
 	private int timeSliceDurationMinutes = 30;
+	private String graphMode;
+	private String lastGraphMode;
+	private static enum GraphMode {AUTO, STATIC};
+	private static List<Double> staticDispersionTable = Lists.newArrayList(1000d, 2000d, 3000d, 5000d, 10000d, 20000d);
+	private int minMillisToLogWhenExtractingRequestTime = 3000;
 
 	private DurationPerPrincipalStats durationPerPrincipalStats;
 	private String cpuUsageJsonValues;
@@ -292,10 +303,106 @@ public class StatisticsAction implements Serializable {
 		facesContext.responseComplete();
 	}
 
+	public void extractRequestTimes() throws IOException, ClassNotFoundException {
+		final Map<String, DescriptiveStatistics> requests = Maps.newHashMap();
+		final ListMultimap<String, RequestEventLog> slowRequests = Multimaps.newListMultimap(Maps.<String, Collection<RequestEventLog>>newHashMap(), new Supplier<List<RequestEventLog>>() {
+			@Override
+			public List<RequestEventLog> get() {
+				return Lists.newArrayList();
+			}
+		});
+
+		new UploadedFileReader() {
+			@Override
+			protected void handleEventLog(final EventLog eventLog) throws IOException {
+				if (eventLog instanceof RequestEventLog) {
+					final RequestEventLog request = (RequestEventLog) eventLog;
+
+					final Long durationMillis = request.getDurationMillis();
+					if (durationMillis != null) {
+						// Compute the request key
+						final StringBuilder requestKeyBuilder = new StringBuilder();
+						requestKeyBuilder.append(request.getMethod()).append(":").append(request.getRequestURI());
+						// Put the parameters in a Map in order to check values easily
+						final Map<String, String[]> parameters = Maps.newHashMap();
+						for (final Parameter parameter : request.getParameters()) {
+							parameters.put(parameter.getName(), parameter.getValues());
+						}
+						// Now check if it's an AJAX request, retrieve the source /!\ Specific JSF
+						if (parameters.containsKey("AJAX:EVENTS_COUNT")) {
+							// It's an ajax request, let's add the source to the key
+							requestKeyBuilder.append("?ajax.source=").append(parameters.get("javax.faces.source")[0]);
+						}
+
+						final String requestKey = requestKeyBuilder.toString();
+						// now add the requestKey and its duration
+						DescriptiveStatistics statistics = requests.get(requestKey);
+						if (statistics == null) {
+							statistics = new DescriptiveStatistics();
+							requests.put(requestKey, statistics);
+						}
+						statistics.addValue(durationMillis);
+						// if the duration is more than the defined minimum, log it
+						if (durationMillis >= minMillisToLogWhenExtractingRequestTime) {
+							slowRequests.put(requestKey, request);
+						}
+					} else {
+						System.out.println("Ignoring "+request);
+					}
+				}
+			}
+		}.readUploadedFiles();
+
+		// Now, let's sort the statistics
+		final List<Entry<String, DescriptiveStatistics>> sortedStatistics = Ordering.from(new Comparator<Entry<String, DescriptiveStatistics>>() {
+			@Override
+			public int compare(final Entry<String, DescriptiveStatistics> o1, final Entry<String, DescriptiveStatistics> o2) {
+				return (int) (o1.getValue().getMean() - o2.getValue().getMean());
+			}
+		}).reverse().sortedCopy(requests.entrySet());
+
+
+		// And finally write them
+		final FacesContext facesContext = FacesContext.getCurrentInstance();
+		final HttpServletResponse response = (HttpServletResponse) facesContext.getExternalContext().getResponse();
+		response.reset(); // Some JSF component library or some Filter might have set some headers in the buffer beforehand. We want to get rid of them, else it may collide.
+		response.setContentType("text/csv"); // Check http://www.w3schools.com/media/media_mimeref.asp for all types. Use if necessary ServletContext#getMimeType() for auto-detection based on filename.
+		response.setHeader("Content-Disposition", "attachment; filename=\"requestTimes.csv\""); // The Save As popup magic is done here. You can give it any file name you want, this only won't work in MSIE, it will use current request URL as file name instead.
+
+		final ServletOutputStream outputStream = response.getOutputStream();
+		outputStream.println("URL;Mean;Number;Median;Min;Max;");
+		final List<String> slowRequestLines = Lists.newArrayList();
+		for (final Entry<String, DescriptiveStatistics> entry : sortedStatistics) {
+			final StringBuilder line = new StringBuilder();
+			final String requestKey = entry.getKey();
+			line.append(requestKey).append(';'); // URL
+			final DescriptiveStatistics stats = entry.getValue();
+			line.append((int)stats.getMean()).append(';'); // Mean
+			line.append(stats.getN()).append(';'); // Number
+			line.append((int)stats.getPercentile(50)).append(';'); // Median
+			line.append((int)stats.getMin()).append(';'); // Min
+			line.append((int)stats.getMax()).append(';'); // Max
+			outputStream.println(line.toString());
+			// Adding the slow request lines corresponding
+			final List<RequestEventLog> slowRequestsForThatRequestKey = slowRequests.get(requestKey);
+			for (final RequestEventLog requestEventLog : slowRequestsForThatRequestKey) {
+				slowRequestLines.add(requestKey+";"+requestEventLog.getDurationMillis()+";;;;;\""+requestEventLog.toString().replaceAll("\"", "\"\"")+"\""); // remove all the "end of line" characters
+			}
+		}
+		// Now log the requests
+		outputStream.println();
+		outputStream.println("URL;Duration;;;;;Request");
+		for (final String line : slowRequestLines) {
+			outputStream.println(line);
+		}
+
+		facesContext.responseComplete();
+	}
+
 	public void computeGraph() throws FileNotFoundException, IOException, ClassNotFoundException {
-		durationPerPrincipalStats = new DurationPerPrincipalStats();
 
 		if (lastTimeSliceDurationMinutes != timeSliceDurationMinutes) {
+			durationPerPrincipalStats = new DurationPerPrincipalStats();
 			new UploadedFileReader() {
 				RequestActionFilter requestActionFilter = new JSF21AndRichFaces4RequestActionFilter();
 				long timeSliceDurationMillis = timeSliceDurationMinutes * 1000 * 60;
@@ -307,18 +414,43 @@ public class StatisticsAction implements Serializable {
 			}.readUploadedFiles();
 		}
 
-		if (lastTimeSliceDurationMinutes != timeSliceDurationMinutes || lastNbItemsForDispersionTables != nbItemsForDispersionTables) {
+		if (lastTimeSliceDurationMinutes != timeSliceDurationMinutes || lastNbItemsForDispersionTables != nbItemsForDispersionTables || !StringUtils.equals(graphMode, lastGraphMode)) {
 			final StringBuilder cpuUsageJsonBuilder = new StringBuilder();
 			final StringBuilder memoryUsageJsonBuilder = new StringBuilder();
 			final StringBuilder nbUsersJsonBuilder = new StringBuilder();
 			final StringBuilder durationsFor1clickMedianJsonBuilder = new StringBuilder();
 
-			// now let's build the json series
+			/// now let's build the json series ///
+
+			// first, we must create the list of different Y values
+
+			final boolean isStaticMode = StringUtils.equalsIgnoreCase(graphMode, GraphMode.STATIC.name());
+			final int nbItemsForDispersionTables;
+			if (isStaticMode) {
+				nbItemsForDispersionTables = staticDispersionTable.size() + 2; // +2 because we will add the median, and the max
+			} else {
+				nbItemsForDispersionTables = this.nbItemsForDispersionTables;
+			}
 			final double[] yValues = new double[nbItemsForDispersionTables];
 			final StringBuilder[] seriesBuilders = new StringBuilder[nbItemsForDispersionTables];
-			// Create the list of different Y values
+			if (isStaticMode) {
+				// static mode : median / 1s / 2s / 3s / 5s / 10s / 20s / max (median should be ordered)
+				final List<Double> yValuesList = Lists.newArrayList(staticDispersionTable);
+				yValuesList.add(durationPerPrincipalStats.totalDurationsFor1click.getPercentile(50)); // Add the median
+				yValuesList.add(durationPerPrincipalStats.totalDurationsFor1click.getMax()); // Add max
+				final List<Double> sortedYValuesList = Ordering.natural().sortedCopy(yValuesList);
+				int i = 0;
+				for (final Double yValue : sortedYValuesList) {
+					yValues[i++] = yValue;
+				}
+			} else {
+				for (int i = 0; i < yValues.length; i++) {
+					yValues[i] = durationPerPrincipalStats.totalDurationsFor1click.getPercentile((i+1d)/nbItemsForDispersionTables*100d);
+				}
+			}
+			// compute the labels
 			for (int i = 0; i < yValues.length; i++) {
-				final double yValue = durationPerPrincipalStats.totalDurationsFor1click.getPercentile((i+1d)/nbItemsForDispersionTables*100d);
+				final double yValue = yValues[i];
 				final StringBuilder seriesBuilder = new StringBuilder();
 				seriesBuilder.append("{stack:true,lines:{show:true,fill:true},label:'");
 				if (i == 0) {
@@ -327,9 +459,10 @@ public class StatisticsAction implements Serializable {
 					seriesBuilder.append((int)yValues[i - 1]);
 				}
 				seriesBuilder.append(" - ").append((int)yValue).append("',data:[");
-				yValues[i] = yValue;
 				seriesBuilders[i] = seriesBuilder;
 			}
+
+			// Now let's compute the datas for each Y values by slice
 			boolean firstSlice = true;
 			TimeSlice previousTimeSlice = null;
 			for(final TimeSlice timeSlice : durationPerPrincipalStats.timeSlices) {
@@ -374,6 +507,7 @@ public class StatisticsAction implements Serializable {
 
 			lastNbItemsForDispersionTables = nbItemsForDispersionTables;
 			lastTimeSliceDurationMinutes = timeSliceDurationMinutes;
+			lastGraphMode = graphMode;
 		}
 	}
 
@@ -973,5 +1107,22 @@ public class StatisticsAction implements Serializable {
 
 	public void setMinMillisForSlowRequests(final int minMillisForSlowRequests) {
 		this.minMillisForSlowRequests = minMillisForSlowRequests;
+	}
+
+	public String getGraphMode() {
+		return graphMode;
+	}
+
+	public void setGraphMode(final String graphMode) {
+		this.graphMode = graphMode;
+	}
+
+	public int getMinMillisToLogWhenExtractingRequestTime() {
+		return minMillisToLogWhenExtractingRequestTime;
+	}
+
+	public void setMinMillisToLogWhenExtractingRequestTime(
+			final int minMillisToLogWhenExtractingRequestTime) {
+		this.minMillisToLogWhenExtractingRequestTime = minMillisToLogWhenExtractingRequestTime;
 	}
 }
