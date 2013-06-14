@@ -27,6 +27,9 @@
 			.stackElement {
 				margin-left: 10px;
 			}
+			.ui-tree {
+				width: 100%;
+			}
 		</style>
 	</h:head>
 	
@@ -50,10 +53,48 @@
 					<h:commandButton value="Extract duration stats" action="#{statisticsAction.extractDurationStats}"/>
 					<h:commandButton value="Extract duration stats per principal" action="#{statisticsAction.extractDurationPerPrincipalStats}"/>
 				</h:form>
-				<h:form>
+				<h:form id="requestTimesForm">
 					<p:fieldset legend="Request times">
 						<p>Min millis to log : <h:inputText value="#{statisticsAction.minMillisToLogWhenExtractingRequestTime}" /></p>
+						<h:commandButton value="Compute !" action="#{statisticsAction.computeRequestTimes}"/>
 						<h:commandButton value="Extract !" action="#{statisticsAction.extractRequestTimes}"/>
+						<p:dataTable id="requestTimesTable" var="entry" value="#{statisticsAction.extractedRequestTimes.sortedRequestList}" rendered="#{not empty statisticsAction.extractedRequestTimes}">
+							<p:column headerText="URL">
+								<p:tree id="requestTimesTree" value="#{statisticsAction.extractedRequestTimes.getDetailsRootForRequestKey(entry.key)}"
+										dynamic="true" cache="false"
+										var="node">
+									<p:ajax event="expand" update=":requestTimesForm" listener="#{statisticsAction.onRequestTimesExpand}" />
+									<p:treeNode type="request">
+										<h:outputText value="#{node}" />
+									</p:treeNode>
+									<p:treeNode type="global-stats">
+										<h:outputText value="Stats for all requests" />
+									</p:treeNode>
+									<p:treeNode type="details">
+										<h:outputText value="Details for each request" />
+									</p:treeNode>
+									<p:treeNode type="stack-element">
+										<h:outputText value="#{node.stackTraceElement}" />
+										<b><h:outputText value=" #{node.nb}" /></b>
+									</p:treeNode>
+								</p:tree>
+							</p:column>
+							<p:column headerText="Mean">
+								<h:outputText value="#{entry.value.mean}" />
+							</p:column>
+							<p:column headerText="Number">
+								<h:outputText value="#{entry.value.n}" />
+							</p:column>
+							<p:column headerText="Median">
+								<h:outputText value="#{entry.value.getPercentile(50)}" />
+							</p:column>
+							<p:column headerText="Min">
+								<h:outputText value="#{entry.value.min}" />
+							</p:column>
+							<p:column headerText="Max">
+								<h:outputText value="#{entry.value.max}" />
+							</p:column>
+						</p:dataTable>
 					</p:fieldset>
 				</h:form>
 				<h:form>

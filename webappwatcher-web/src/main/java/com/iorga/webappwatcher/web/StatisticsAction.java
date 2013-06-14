@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -32,6 +33,9 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.primefaces.event.FileUploadEvent;
+import org.primefaces.event.NodeExpandEvent;
+import org.primefaces.model.DefaultTreeNode;
+import org.primefaces.model.TreeNode;
 import org.primefaces.model.UploadedFile;
 import org.tukaani.xz.CorruptedInputException;
 
@@ -47,6 +51,7 @@ import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
 import com.iorga.webappwatcher.eventlog.SystemEventLog;
+import com.iorga.webappwatcher.eventlog.SystemEventLog.Thread;
 import com.iorga.webappwatcher.web.StatisticsAction.DurationPerPrincipalStats.PrincipalContext;
 import com.iorga.webappwatcher.web.StatisticsAction.DurationPerPrincipalStats.TimeSlice;
 import com.iorga.webappwatcher.web.StatisticsAction.DurationPerPrincipalStats.TimeSlice.StatsPerPrincipal;
@@ -303,14 +308,69 @@ public class StatisticsAction implements Serializable {
 		facesContext.responseComplete();
 	}
 
-	public void extractRequestTimes() throws IOException, ClassNotFoundException {
+
+	public static class ExtractedRequestTimes {
+		private static final String DETAILS = "details";
+		private static final String GLOBAL_STATS = "global-stats";
+		private static final String STACK_ELEMENT = "stack-element";
+
 		final Map<String, DescriptiveStatistics> requests = Maps.newHashMap();
-		final ListMultimap<String, RequestEventLog> slowRequests = Multimaps.newListMultimap(Maps.<String, Collection<RequestEventLog>>newHashMap(), new Supplier<List<RequestEventLog>>() {
-			@Override
-			public List<RequestEventLog> get() {
-				return Lists.newArrayList();
+		final ListMultimap<String, RequestEventLog> slowRequests = newListMultimap();
+		final ListMultimap<RequestEventLog, SystemEventLog> slowRequestSystemLogs = newListMultimap();
+		Map<String, TreeNode> detailsRoots = Maps.newHashMap();
+		List<Entry<String, DescriptiveStatistics>> sortedRequestlist;
+
+		public Map<String, DescriptiveStatistics> getRequests() {
+			return requests;
+		}
+		public List<Entry<String, DescriptiveStatistics>> getSortedRequestList() {
+			if (sortedRequestlist == null) {
+				sortedRequestlist = Ordering.from(new Comparator<Entry<String, DescriptiveStatistics>>() {
+					@Override
+					public int compare(final Entry<String, DescriptiveStatistics> o1, final Entry<String, DescriptiveStatistics> o2) {
+						return (int) (o1.getValue().getMean() - o2.getValue().getMean());
+					}
+				}).reverse().sortedCopy(requests.entrySet());
 			}
-		});
+			return sortedRequestlist;
+		}
+
+		public TreeNode getDetailsRootForRequestKey(final String requestKey) {
+			TreeNode detailsRoot = detailsRoots.get(requestKey);
+			if (detailsRoot == null) {
+				// Create the root node
+				detailsRoot = new DefaultTreeNode("root", requestKey, null);
+				final TreeNode requestNode = new DefaultTreeNode("request", requestKey, detailsRoot);
+				new DefaultTreeNode(GLOBAL_STATS, requestKey, requestNode) {
+					private static final long serialVersionUID = 1L;
+					@Override
+					public boolean isLeaf() {
+						return false;
+					}
+				};
+				new DefaultTreeNode(DETAILS, requestKey, requestNode) {
+					private static final long serialVersionUID = 1L;
+					@Override
+					public boolean isLeaf() {
+						return false;
+					}
+				};
+
+				detailsRoots.put(requestKey, detailsRoot);
+			}
+			return detailsRoot;
+		}
+	}
+
+	private ExtractedRequestTimes extractedRequestTimes;
+
+	public void computeRequestTimes() throws IOException, ClassNotFoundException {
+
+		extractedRequestTimes = new ExtractedRequestTimes();
+		final Map<String, DescriptiveStatistics> requests = extractedRequestTimes.requests;
+		final ListMultimap<String, RequestEventLog> slowRequests = extractedRequestTimes.slowRequests;
+		final ListMultimap<RequestEventLog, SystemEventLog> slowRequestSystemLogs = extractedRequestTimes.slowRequestSystemLogs;
+		final List<RequestEventLog> currentSlowRequests = Lists.newLinkedList();
 
 		new UploadedFileReader() {
 			@Override
@@ -345,21 +405,37 @@ public class StatisticsAction implements Serializable {
 						// if the duration is more than the defined minimum, log it
 						if (durationMillis >= minMillisToLogWhenExtractingRequestTime) {
 							slowRequests.put(requestKey, request);
+							currentSlowRequests.add(request);
 						}
 					} else {
 						System.out.println("Ignoring "+request);
 					}
+				} else if (eventLog instanceof SystemEventLog) {
+					final SystemEventLog system = (SystemEventLog) eventLog;
+					// check all the current slow requests in order to add them that systemEventLog or remove them from the current slow requests
+					// list if the end date has passed
+					for (final Iterator<RequestEventLog> iterator = currentSlowRequests.iterator(); iterator.hasNext();) {
+						final RequestEventLog request = iterator.next();
+						if (request.getAfterProcessedDate().getTime() > system.getDate().getTime()) {
+							// the system log is included into that request duration, let's add it
+							slowRequestSystemLogs.put(request, system);
+						} else {
+							// the systme log comes after the end of that request, that request has now passed, let's remove it from the list
+							iterator.remove();
+						}
+					}
 				}
 			}
 		}.readUploadedFiles();
+	}
+
+	public void extractRequestTimes() throws IOException, ClassNotFoundException {
+		if (extractedRequestTimes == null) {
+			computeRequestTimes();
+		}
 
 		// Now, let's sort the statistics
-		final List<Entry<String, DescriptiveStatistics>> sortedStatistics = Ordering.from(new Comparator<Entry<String, DescriptiveStatistics>>() {
-			@Override
-			public int compare(final Entry<String, DescriptiveStatistics> o1, final Entry<String, DescriptiveStatistics> o2) {
-				return (int) (o1.getValue().getMean() - o2.getValue().getMean());
-			}
-		}).reverse().sortedCopy(requests.entrySet());
+		final List<Entry<String, DescriptiveStatistics>> sortedStatistics = extractedRequestTimes.getSortedRequestList();
 
 
 		// And finally write them
@@ -367,10 +443,12 @@ public class StatisticsAction implements Serializable {
 		final HttpServletResponse response = (HttpServletResponse) facesContext.getExternalContext().getResponse();
 		response.reset(); // Some JSF component library or some Filter might have set some headers in the buffer beforehand. We want to get rid of them, else it may collide.
 		response.setContentType("text/csv"); // Check http://www.w3schools.com/media/media_mimeref.asp for all types. Use if necessary ServletContext#getMimeType() for auto-detection based on filename.
+		response.setCharacterEncoding("UTF-8");
 		response.setHeader("Content-Disposition", "attachment; filename=\"requestTimes.csv\""); // The Save As popup magic is done here. You can give it any file name you want, this only won't work in MSIE, it will use current request URL as file name instead.
 
-		final ServletOutputStream outputStream = response.getOutputStream();
-		outputStream.println("URL;Mean;Number;Median;Min;Max;");
+//		final ServletOutputStream outputStream = response.getOutputStream();
+		final PrintWriter writer = response.getWriter();
+		writer.println("URL;Mean;Number;Median;Min;Max;");
 		final List<String> slowRequestLines = Lists.newArrayList();
 		for (final Entry<String, DescriptiveStatistics> entry : sortedStatistics) {
 			final StringBuilder line = new StringBuilder();
@@ -382,18 +460,18 @@ public class StatisticsAction implements Serializable {
 			line.append((int)stats.getPercentile(50)).append(';'); // Median
 			line.append((int)stats.getMin()).append(';'); // Min
 			line.append((int)stats.getMax()).append(';'); // Max
-			outputStream.println(line.toString());
+			writer.println(line.toString());
 			// Adding the slow request lines corresponding
-			final List<RequestEventLog> slowRequestsForThatRequestKey = slowRequests.get(requestKey);
+			final List<RequestEventLog> slowRequestsForThatRequestKey = extractedRequestTimes.slowRequests.get(requestKey);
 			for (final RequestEventLog requestEventLog : slowRequestsForThatRequestKey) {
 				slowRequestLines.add(requestKey+";"+requestEventLog.getDurationMillis()+";;;;;\""+requestEventLog.toString().replaceAll("\"", "\"\"")+"\""); // remove all the "end of line" characters
 			}
 		}
 		// Now log the requests
-		outputStream.println();
-		outputStream.println("URL;Duration;;;;;Request");
+		writer.println();
+		writer.println("URL;Duration;;;;;Request");
 		for (final String line : slowRequestLines) {
-			outputStream.println(line);
+			writer.println(line);
 		}
 
 		facesContext.responseComplete();
@@ -517,6 +595,19 @@ public class StatisticsAction implements Serializable {
 		System.out.println("Handling "+event.getFile().getFileName());
 		uploadedFiles.add(event.getFile());
 		resetComputedGraph();
+	}
+
+	public void onRequestTimesExpand(final NodeExpandEvent event) {
+		// a node is expanded, check if we must compute the request
+		final TreeNode treeNode = event.getTreeNode();
+		if (ExtractedRequestTimes.GLOBAL_STATS.equals(treeNode.getType())) {
+			if (treeNode.getChildCount() == 0) {
+				// must compute the global slow stats for that request
+				computeGlobalStatsRequestTimes(treeNode);
+			}
+		} else if (ExtractedRequestTimes.STACK_ELEMENT.equals(treeNode.getType())) {
+			openAllSingleChild(treeNode);
+		}
 	}
 
 	/// Utils ///
@@ -1054,6 +1145,92 @@ public class StatisticsAction implements Serializable {
 		this.nbUsersJsonValues = null;
 		this.durationsFor1clickMedianJsonValues = null;
 		this.lastNbItemsForDispersionTables = 0;
+		this.lastGraphMode = null;
+		this.extractedRequestTimes = null;
+	}
+
+	private static <K, V> ListMultimap<K, V> newListMultimap() {
+		return Multimaps.newListMultimap(Maps.<K, Collection<V>>newHashMap(), new Supplier<List<V>>() {
+			@Override
+			public List<V> get() {
+				return Lists.newArrayList();
+			}
+		});
+	}
+
+	public static class StackStatElement {
+		private final StackTraceElement stackTraceElement;
+		private int nb = 1;
+
+		public StackStatElement(final StackTraceElement stackTraceElement) {
+			this.stackTraceElement = stackTraceElement;
+		}
+
+		public StackTraceElement getStackTraceElement() {
+			return stackTraceElement;
+		}
+
+		public int getNb() {
+			return nb;
+		}
+	}
+
+	private void computeGlobalStatsRequestTimes(final TreeNode globalStatsNode) {
+		final String requestKey = (String) globalStatsNode.getData();
+
+		// retrieve all the requests for that requestKey
+		final List<RequestEventLog> requests = extractedRequestTimes.slowRequests.get(requestKey);
+		for (final RequestEventLog request : requests) {
+			// retrieve all system logs for that request if any
+			final List<SystemEventLog> systems = extractedRequestTimes.slowRequestSystemLogs.get(request);
+			// for all that system events, will retrieve the thread of the request
+			for (final SystemEventLog system : systems) {
+				for (final Thread thread : system.getBlockedOrRunningThreads()) {
+					if (thread.getId() == request.getThreadId()) {
+						// This is the thread of the request, let's add the stack to the StackStatElement children
+						final StackTraceElement[] stackTraces = thread.getStackTrace();
+						recurseAddStackElement(globalStatsNode, stackTraces, stackTraces.length);
+						openAllSingleChild(globalStatsNode); // and open every single entry
+						break; // found
+					}
+				}
+			}
+		}
+	}
+
+	private void recurseAddStackElement(final TreeNode parent, final StackTraceElement[] stackTrace, int stackIndex) {
+		if (stackIndex > 0) {
+			stackIndex--;
+			final List<TreeNode> children = parent.getChildren();
+			// first retrieve the element to add
+			final StackTraceElement element = stackTrace[stackIndex];
+			boolean wasAdded = false;
+			for (final TreeNode node : children) {
+				// check if it's the same stack
+				final StackStatElement treeElement = (StackStatElement)node.getData();
+				if (treeElement.stackTraceElement.equals(element)) {
+					// it's the same element, let's add it
+					treeElement.nb++;
+					wasAdded = true;
+					// and recurse add the next element
+					recurseAddStackElement(node, stackTrace, stackIndex);
+					break;	// found
+				}
+			}
+			if (!wasAdded) {
+				// not found, let's create a new node for it
+				final DefaultTreeNode node = new DefaultTreeNode(ExtractedRequestTimes.STACK_ELEMENT, new StackStatElement(element), parent);
+				// and recurse add the next element
+				recurseAddStackElement(node, stackTrace, stackIndex);
+			}
+		}
+	}
+
+	private void openAllSingleChild(final TreeNode node) {
+		node.setExpanded(true);
+		if (node.getChildCount() == 1) {
+			openAllSingleChild(node.getChildren().get(0));
+		}
 	}
 
 	/// Getters & Setters ///
@@ -1124,5 +1301,9 @@ public class StatisticsAction implements Serializable {
 	public void setMinMillisToLogWhenExtractingRequestTime(
 			final int minMillisToLogWhenExtractingRequestTime) {
 		this.minMillisToLogWhenExtractingRequestTime = minMillisToLogWhenExtractingRequestTime;
+	}
+
+	public ExtractedRequestTimes getExtractedRequestTimes() {
+		return extractedRequestTimes;
 	}
 }
