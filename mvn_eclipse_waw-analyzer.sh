@@ -14,7 +14,10 @@ function catch_int {
 	exit 3
 }
 
-cd waw-analyzer-parent
+cd webappwatcher-parent
+mvn install
+
+cd ../waw-analyzer-parent
 mvn clean
 mvn eclipse:clean
 mvn eclipse:eclipse

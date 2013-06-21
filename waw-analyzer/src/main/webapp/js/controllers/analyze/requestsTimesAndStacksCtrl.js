@@ -1,14 +1,10 @@
-function RequestsTimesAndStacksCtrl($http, $scope, $filter, ngTableParams) {
+function RequestsTimesAndStacksCtrl($http, $scope, irajTableService) {
 	/// Action methods ///
 	/////////////////////
 	$scope.compute = function () {
 		$http.get('api/analyze/requestsTimesAndStacks/compute/3000', {irajClearAllMessages: true})
 			.success(function(data, status, headers, config) {
 				$scope.requests = data;
-				$scope.tableParams.total = data.length;
-				$scope.tableParams.page = 1;
-				
-				$scope.sortTable($scope.tableParams);
 			})
 		;
 	}
@@ -55,29 +51,7 @@ function RequestsTimesAndStacksCtrl($http, $scope, $filter, ngTableParams) {
 		node.displayedChildren = node.children;
 	}
 	
-	$scope.sortTable = function(tableParams) {
-		var data = $scope.requests;
-		// see http://esvit.github.io/ng-table/#!/demo3
-		// use build-in angular filter
-		var orderedData = tableParams.sorting ? 
-			$filter('orderBy')(data, tableParams.orderBy()) :
-			data;
- 
-		// slice array data on pages
-		var list;
-		if (orderedData) {
-			list = orderedData.slice(
-				(tableParams.page - 1) * tableParams.count,
-				tableParams.page * tableParams.count
-			);
-		}
-		
-		$scope.orderedRequests = list;
-	}
-	
-	$scope.$watch('tableParams', $scope.sortTable);
-	
 	/// Initialization ///
 	/////////////////////
-	$scope.tableParams = new ngTableParams({count: 25});
+	irajTableService.initTable('tableParams', 'requests', 'orderedRequests', $scope);
 }

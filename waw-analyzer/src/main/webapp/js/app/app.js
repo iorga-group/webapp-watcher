@@ -4,6 +4,7 @@ var module = angular.module('waw-analyzer', [
 		'iraj-message-service',
 		'iraj-breadcrumbs-service',
 		'iraj-progress-interceptor',
-		'blueimp.fileupload',
-		'ngTable'])
-	.config(router);
+		'iraj-table-service',
+		'blueimp.fileupload'])
+	.config(router)
+;
