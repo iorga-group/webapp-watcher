@@ -1,0 +1,107 @@
+a {
+	color: #00B7FF;
+}
+/* table thead{
+	color: white;
+	background-color: black; 
+} */
+.pagination ul > .disabled > a, 
+	.pagination ul > .disabled > a:hover,
+	.pagination ul > .disabled > a:focus{
+	background-color: #999999;
+	color: white;
+}
+
+.breadcrumbs{
+	overflow: hidden;
+	width: 100%;
+	list-style: none;
+}
+
+.breadcrumbs li{
+	float: left;
+	margin: 0 2em 0 0;
+}
+
+.breadcrumbs a{
+	padding: 0.3em 0.5em 0.3em 1.4em;
+	float: left;
+	text-decoration: none;
+	color: #444;
+	background: #F4F4F4;	
+	position: relative;
+	z-index: 1;
+	text-shadow: 0 1px 0 rgba(255,255,255,.5);
+	border-radius: .4em 0 0 .4em;	
+}
+
+.breadcrumbs a:hover{
+	background: #9F9F9F;
+	color: #FEFEFE;
+}
+
+.breadcrumbs a::after{
+	background: #F4F4F4;
+	content: "";
+	height: 2.5em;
+	margin-top: -1.25em;
+	position: absolute;
+	right: -1em;
+	top: 50%;
+	width: 2.5em;
+	z-index: -1; 
+	transform: rotate(45deg);
+	-webkit-transform: rotate(45deg);
+	border-radius: .4em;
+}
+
+.breadcrumbs a:hover::after{
+	background: #9F9F9F;
+	color: #FEFEFE;
+}
+
+.breadcrumbs .current,
+.breadcrumbs .current:hover{
+	font-weight: bold;
+	background: none;
+	color: #444;
+}
+
+.breadcrumbs .current::after{
+	content: normal;
+}
+
+/* tree based on http://acidmartin.wordpress.com/2011/09/26/css3-treevew-no-javascript/ */
+.tree ul {
+	/* http://stackoverflow.com/questions/1027354/need-a-unordered-list-without-any-bullets */
+	list-style-type: none;
+	margin-left: 10px;
+	margin-bottom: 0px;
+}
+.tree input + label + ul {
+	display: none;
+}
+.tree input:checked + label + ul {
+	display: block;
+}
+.tree input + label:before {
+	/* http://stackoverflow.com/a/11919684/535203 */
+	font-family: FontAwesome;
+	font-weight: normal;
+	font-style: normal;
+	display: inline-block;
+	text-decoration: inherit;
+	margin-right: 4px;
+	content: "\f054";	/* icon-chevron-right with font-awesome */
+}
+.tree input:checked + label:before {
+	content: "\f078";	/* icon-chevron-down with font-awesome */
+}
+.tree input {
+	position: absolute;
+	opacity: 0;
+}
+.tree input:disabled + label {
+	cursor: default; /* or no-drop */
+	opacity: .6;
+}

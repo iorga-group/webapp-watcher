@@ -1,0 +1,48 @@
+<!doctype html>
+<html xmlns:ng="http://angularjs.org" id="ng-app" ng-app="waw-analyzer" >
+	<head>
+		<link href="css/jquery.fileupload-ui.css" rel="stylesheet">
+		<link href="css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+		<link href="css/font-awesome.css" rel="stylesheet">
+		<link href="css/ng-table.css" rel="stylesheet">
+		<link href="iraj/css/progress-interceptor.css" rel="stylesheet">
+		<link href="css/style.css" rel="stylesheet">
+	</head>
+	<body>
+		<div ng-include="'templates/includes/menu.html'"></div>
+		<div ng-include="'templates/includes/breadcrumbs.html'"></div>
+		<div class="container-fluid" ng-view></div>
+		
+		<script src="iraj/js/lib/jquery.min.js"></script>
+		<script src="iraj/js/lib/angular.js"></script>
+		<script src="js/lib/bootstrap.min.js"></script>
+		<!--[if lte IE 8]>
+			<script src="public/js/lib/json3.min.js"></script>
+		<![endif]-->
+		<script src="js/lib/angular-strap.min.js"></script>
+		<script charset="UTF-8" src="js/lib/ng-table.js"></script>
+		
+		<!-- Using http://blueimp.github.io/jQuery-File-Upload/ -->
+		<!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
+		<script src="js/lib/jquery.ui.widget.js"></script>
+		<!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
+		<script src="js/lib/jquery.iframe-transport.js"></script>
+		<!-- The basic File Upload plugin -->
+		<script src="js/lib/jquery.fileupload.js"></script>
+		<!-- The File Upload processing plugin -->
+		<script src="js/lib/jquery.fileupload-process.js"></script>
+		<!-- The File Upload Angular JS module -->
+		<script src="js/lib/jquery.fileupload-angular.js"></script>
+		
+		<script src="iraj/js/message-service.js"></script>
+		<script src="iraj/js/message-interceptor.js"></script>
+		<script src="iraj/js/breadcrumbs-service.js"></script>
+		<script src="iraj/js/progress-interceptor.js"></script>
+		<script src="js/app/router.js"></script>
+		<script src="js/app/app.js"></script>
+		<script charset="UTF-8" src="js/controllers/homeCtrl.js"></script>
+		<script charset="UTF-8" src="js/controllers/includes/menuCtrl.js"></script>
+		<script charset="UTF-8" src="js/controllers/includes/breadcrumbsCtrl.js"></script>
+		<script charset="UTF-8" src="js/controllers/session/uploadedFilesCtrl.js"></script>
+		<script charset="UTF-8" src="js/controllers/analyze/requestsTimesAndStacksCtrl.js"></script>
+	</body>

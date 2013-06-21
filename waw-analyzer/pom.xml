@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>waw-analyzer</artifactId>
+	<name>Iorga Webapp Watcher Analyzer</name>
+	<packaging>war</packaging>
+	<parent>
+		<groupId>com.iorga</groupId>
+		<artifactId>waw-analyzer-parent</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../waw-analyzer-parent/pom.xml</relativePath>
+	</parent>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.iorga</groupId>
+			<artifactId>webappwatcher</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.iorga</groupId>
+			<artifactId>iraj-waw-analyzer</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>com.mysema.querydsl</groupId>
+					<artifactId>querydsl-jpa</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.hibernate</groupId>
+					<artifactId>hibernate-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.hibernate</groupId>
+					<artifactId>hibernate-entitymanager</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jaxrs</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>commons-fileupload</groupId>
+			<artifactId>commons-fileupload</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-multipart-provider</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>javax.servlet</groupId>
+					<artifactId>servlet-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- Provided -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<!-- Runtime -->
+		<dependency>
+			<groupId>org.jboss.weld.servlet</groupId>
+			<artifactId>weld-servlet</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-cdi</artifactId>
+			<type>jar</type>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jackson-provider</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<configuration>
+					<buildcommands>
+						<buildcommand>org.eclipse.jdt.core.javabuilder</buildcommand>
+						<buildcommand>org.eclipse.wst.common.project.facet.core.builder</buildcommand>
+						<buildcommand>org.jboss.tools.cdi.core.cdibuilder</buildcommand>
+						<buildcommand>org.jboss.tools.jst.web.kb.kbbuilder</buildcommand>
+						<buildcommand>org.eclipse.wst.validation.validationbuilder</buildcommand>
+					</buildcommands>
+					<!-- <additionalConfig> <file> <name>.settings/org.maven.ide.eclipse.prefs</name> 
+						<content> <![CDATA[eclipse.preferences.version=1 fullBuildGoals=process-test-resources 
+						includeModules=false resolveWorkspaceProjects=true resourceFilterGoals=process-resources 
+						resources\:testResources skipCompilerPlugin=true version=1]]> </content> 
+						</file> </additionalConfig> -->
+					<additionalProjectFacets>
+						<jst.jsf>2.0</jst.jsf>
+					</additionalProjectFacets>
+					<additionalProjectnatures>
+						<projectnature>org.jboss.tools.cdi.core.cdinature</projectnature>
+						<projectnature>org.jboss.tools.jsf.jsfnature</projectnature>
+						<projectnature>org.jboss.tools.jst.web.kb.kbnature</projectnature>
+					</additionalProjectnatures>
+					<packaging>war</packaging>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

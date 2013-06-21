@@ -1,0 +1,27 @@
+[irajGlobalProgress] {
+	position: fixed;
+	top: 0%;
+	right: 0%;
+	z-index: 10;
+}
+
+[irajGlobalProgressImg] {
+	height: 32px;
+	width: 32px;
+	float: left;
+}
+
+[irajGlobalProgressNbRequests] {
+	float: left;
+	margin-left: -16px;
+	margin-top: 16px;
+	font-size: 10.5px;
+	padding: 0 4px;
+}
+
+[irajGlobalProgressMessage] {
+	vertical-align: middle;
+	line-height: 32px;
+	margin-right: 4px;
+	margin-left: 4px;
+}

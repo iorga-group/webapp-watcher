@@ -1,0 +1,172 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.iorga</groupId>
+	<artifactId>waw-analyzer-parent</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>Iorga Webapp Watcher Analyzer - Parent</name>
+	<packaging>pom</packaging>
+
+
+	<properties>
+		<!-- Project globals -->
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>1.6</java.version>
+
+		<!-- artifact versions -->
+		<version.webappwatcher>1.5.1-SNAPSHOT</version.webappwatcher>
+		<version.iraj>0.0.1-SNAPSHOT</version.iraj>
+		<version.resteasy>2.3.6.Final</version.resteasy>
+		<version.commons-fileupload>1.2.2</version.commons-fileupload>
+		<version.commons-math3>3.1.1</version.commons-math3>
+
+		<!-- Project properties -->
+	</properties>
+
+	<modules>
+		<module>../webappwatcher-parent</module>
+		<module>../iraj-bom</module>
+		<module>../waw-analyzer</module>
+	</modules>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.0</version>
+					<configuration>
+						<source>${java.version}</source>
+						<target>${java.version}</target>
+						<encoding>${project.build.sourceEncoding}</encoding>
+					</configuration>
+				</plugin>
+				<plugin>
+					<artifactId>maven-eclipse-plugin</artifactId>
+					<version>2.9</version>
+					<configuration>
+						<downloadSources>true</downloadSources>
+						<downloadJavadocs>true</downloadJavadocs>
+						<buildcommands>
+							<buildcommand>org.eclipse.jdt.core.javabuilder</buildcommand>
+							<buildcommand>org.eclipse.wst.common.project.facet.core.builder</buildcommand>
+							<buildcommand>org.jboss.tools.cdi.core.cdibuilder</buildcommand>
+							<buildcommand>org.eclipse.wst.validation.validationbuilder</buildcommand>
+						</buildcommands>
+						<additionalProjectnatures>
+							<projectnature>org.jboss.tools.cdi.core.cdinature</projectnature>
+						</additionalProjectnatures>
+						<additionalConfig>
+							<file>
+								<name>.settings/org.eclipse.core.resources.prefs</name>
+								<content>
+<![CDATA[eclipse.preferences.version=1
+encoding/<project>=UTF-8]]>
+								</content>
+							</file>
+						</additionalConfig>
+						<wtpversion>2.0</wtpversion>
+					</configuration>
+				</plugin>
+				<plugin>
+					<artifactId>maven-war-plugin</artifactId>
+					<version>2.3</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-clean-plugin</artifactId>
+					<version>2.5</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.14</version>
+				</plugin>
+				<plugin>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>2.6</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>jboss-public-repository-group</id>
+			<name>JBoss Public Maven Repository Group</name>
+			<url>http://repository.jboss.org/nexus/content/groups/public</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+				<updatePolicy>never</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>jboss-public-repository-group</id>
+			<name>JBoss Public Maven Repository Group</name>
+			<url>http://repository.jboss.org/nexus/content/groups/public</url>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+				<updatePolicy>never</updatePolicy>
+			</snapshots>
+		</pluginRepository>
+		<pluginRepository>
+			<id>codehaus</id>
+			<url>http://repository.codehaus.org/</url>
+		</pluginRepository>
+	</pluginRepositories>
+
+	<scm>
+		<connection>scm:git:file://../</connection>
+		<developerConnection>scm:git:file://../</developerConnection>
+		<url>scm:git:file://../</url>
+	</scm>
+
+
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- Import -->
+			<dependency>
+				<groupId>com.iorga</groupId>
+				<artifactId>iraj-waw-analyzer-bom</artifactId>
+				<version>${version.iraj}</version>
+				<scope>import</scope>
+				<type>pom</type>
+			</dependency>
+			<!-- Compile -->
+			<dependency>
+				<groupId>com.iorga</groupId>
+				<artifactId>webappwatcher</artifactId>
+				<version>${version.webappwatcher}</version>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-math3</artifactId>
+				<version>${version.commons-math3}</version>
+			</dependency>
+			<dependency>
+				<groupId>commons-fileupload</groupId>
+				<artifactId>commons-fileupload</artifactId>
+				<version>${version.commons-fileupload}</version>
+			</dependency>
+			<!-- Runtime -->
+			<dependency>
+				<groupId>org.jboss.resteasy</groupId>
+				<artifactId>resteasy-cdi</artifactId>
+				<version>${version.resteasy}</version>
+				<type>jar</type>
+				<scope>runtime</scope>
+			</dependency>
+			<!-- Provided -->
+			<!-- Test -->
+		</dependencies>
+	</dependencyManagement>
+</project>
