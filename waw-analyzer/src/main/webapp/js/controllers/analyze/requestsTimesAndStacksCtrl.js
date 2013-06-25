@@ -1,4 +1,4 @@
-function RequestsTimesAndStacksCtrl($http, $scope, irajTableService) {
+function RequestsTimesAndStacksCtrl($http, $scope, irajTableService, irajBreadcrumbsService) {
 	/// Action methods ///
 	/////////////////////
 	$scope.compute = function () {
@@ -54,4 +54,6 @@ function RequestsTimesAndStacksCtrl($http, $scope, irajTableService) {
 	/// Initialization ///
 	/////////////////////
 	irajTableService.initTable('tableParams', 'requests', 'orderedRequests', $scope);
+	
+	irajBreadcrumbsService.setLastLabel('Requests times and stacks');
 }

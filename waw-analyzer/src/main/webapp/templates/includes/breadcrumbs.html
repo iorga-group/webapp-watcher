@@ -1,9 +1,9 @@
 <div ng-controller="BreadcrumbsCtrl" ng-show="breadcrumbs.length > 0">
-	<ul class="breadcrumbs">
-		<li ng-repeat="breadcrumb in breadcrumbs">
+	<ul class="breadcrumb">
+		<li ng-repeat="breadcrumb in breadcrumbs" ng-class="{active:$last}">
 			<span ng-switch="$last">
-				<span ng-switch-when="true"><a href="" class="current">{{breadcrumb.label}}</a></span>
-				<span ng-switch-default><a href="" ng-click="goToUrl('{{breadcrumb.path}}', {{breadcrumb.index}})">{{breadcrumb.label}}</a></span>
+				<span ng-switch-when="true">{{breadcrumb.label}}</span>
+				<span ng-switch-default><a href="" ng-click="goToUrl('{{breadcrumb.path}}', {{breadcrumb.index}})">{{breadcrumb.label}}</a><span class="divider">/</span></span>
 			</span>
 		</li>
 	</ul>

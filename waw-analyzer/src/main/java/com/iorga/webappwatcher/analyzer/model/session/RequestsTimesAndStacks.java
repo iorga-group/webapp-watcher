@@ -47,7 +47,9 @@ public class RequestsTimesAndStacks implements Serializable {
 	private final Map<String, TreeNode<StackStatElement>> groupedStacksRoots = Maps.newHashMap();
 //	private List<Entry<String, DescriptiveStatistics>> sortedRequestlist;
 
-	public static class RequestTimes {
+	public static class RequestTimes implements Serializable {
+		private static final long serialVersionUID = 1L;
+
 		private final String id;
 		private final String url;
 		private final DescriptiveStatistics statistics = new DescriptiveStatistics();
@@ -68,7 +70,9 @@ public class RequestsTimesAndStacks implements Serializable {
 		}
 	}
 
-	public static class StackStatElement {
+	public static class StackStatElement  implements Serializable {
+		private static final long serialVersionUID = 1L;
+
 		private final StackTraceElement stackTraceElement;
 		private int nb = 1;
 
@@ -85,7 +89,9 @@ public class RequestsTimesAndStacks implements Serializable {
 		}
 	}
 
-	public static class TreeNode<T> {
+	public static class TreeNode<T>  implements Serializable {
+		private static final long serialVersionUID = 1L;
+
 		private final TreeNode<T> parent;
 		private final List<TreeNode<T>> children;
 		private final T data;

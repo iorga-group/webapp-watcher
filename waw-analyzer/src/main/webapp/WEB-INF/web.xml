@@ -52,4 +52,17 @@
 		<param-name>resteasy.providers</param-name>
 		<param-value>com.iorga.iraj.jaxrs.JsonMappingExceptionMapper,com.iorga.iraj.jaxrs.JsonParseExceptionMapper</param-value>
 	</context-param>
+	
+	<servlet>
+		<servlet-name>JSAgglomerator</servlet-name>
+		<servlet-class>com.iorga.iraj.servlet.AgglomeratorServlet</servlet-class>
+		<init-param>
+			<param-name>mode</param-name>
+			<param-value>development</param-value>
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>JSAgglomerator</servlet-name>
+		<url-pattern>/index.html</url-pattern>
+	</servlet-mapping>
 </web-app>

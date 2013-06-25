@@ -10,7 +10,7 @@
 	<properties>
 		<!-- Project globals -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<java.version>1.6</java.version>
+		<java.version>1.7</java.version>
 
 		<!-- artifact versions -->
 		<version.webappwatcher>1.5.1-SNAPSHOT</version.webappwatcher>
@@ -65,6 +65,9 @@ encoding/<project>=UTF-8]]>
 							</file>
 						</additionalConfig>
 						<wtpversion>2.0</wtpversion>
+						<classpathContainers>
+							<classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7</classpathContainer>
+						</classpathContainers>
 					</configuration>
 				</plugin>
 				<plugin>
