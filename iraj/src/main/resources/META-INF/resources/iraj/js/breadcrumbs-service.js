@@ -25,11 +25,8 @@ angular.module('iraj-breadcrumbs-service', [])
 	
 		irajBreadcrumbsService.switchTo = function(index) {
 			var newListBreadCrumb = [];
-			for (var i=0; i<listBreadCrumb.length; i++) {
+			for (var i=0; i<=index; i++) {
 				newListBreadCrumb.push(listBreadCrumb[i]);
-				if (i == index){
-					break;
-				}
 			}
 			listBreadCrumb = newListBreadCrumb;
 			$rootScope.$broadcast('iraj:breadcrumbs-refresh');
