@@ -16,6 +16,11 @@ angular.module('iraj-breadcrumbs-service', [])
 			listBreadCrumb.push({index : taille, label : label, path: path});
 			$rootScope.$broadcast('iraj:breadcrumbs-refresh');
 		};
+		
+		irajBreadcrumbsService.changePathAndPush = function(scope, path, label) {
+			$location.path(path);
+			irajBreadcrumbsService.push(scope, $location.path());
+		}
 	
 		irajBreadcrumbsService.init = function(path, label) {
 			listBreadCrumb = [];

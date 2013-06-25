@@ -19,6 +19,22 @@ a {
 	margin-left: 10px;
 	margin-bottom: 0px;
 }
+
+.tree li + p:before {
+	/* http://stackoverflow.com/a/11919684/535203 */
+	font-family: FontAwesome;
+	font-weight: normal;
+	font-style: normal;
+	display: inline-block;
+	text-decoration: inherit;
+	margin-right: 4px;
+	content: "\f054";	/* icon-chevron-right with font-awesome */
+}
+
+.tree li + p:before {
+	content: "\f078";	/* icon-chevron-down with font-awesome */
+}
+
 .tree input + label + ul {
 	display: none;
 }

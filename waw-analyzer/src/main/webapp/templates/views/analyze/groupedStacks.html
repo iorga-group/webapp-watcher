@@ -1,0 +1,21 @@
+<div class="tree">
+	<ul>
+		<li ng-repeat="node in groupedStacks" ng-include="'recursiveGroupedStacks.html'" />
+	</ul>
+</div>
+
+<script type="text/ng-template" id="recursiveGroupedStacks.html">
+	<p ng-click="switchChildrenDisplayed(node)">
+		<i class="icon-chevron-right" ng-hide="node.childrenDisplayed" />
+		<i class="icon-chevron-down" ng-show="node.childrenDisplayed" />
+		{{node.stackTraceElement.element}} <b>{{node.stackTraceElement.nb}} / {{rootNode.stackTraceElement.nb}}</b>
+	</p>
+	<ul ng-show="node.childrenDisplayed">
+		<li>
+			<p ng-repeat="element in node.stackTraceElements">{{element.element}} <b>{{element.nb}} / {{rootNode.stackTraceElement.nb}}</b></p>
+			<ul>
+				<li ng-repeat="node in node.children" ng-include="'recursiveGroupedStacks.html'" />
+			</ul>
+		</li>
+	</ul>
+</script>

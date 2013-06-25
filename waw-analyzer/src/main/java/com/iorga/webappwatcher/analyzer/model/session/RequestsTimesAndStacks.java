@@ -119,7 +119,7 @@ public class RequestsTimesAndStacks implements Serializable {
 	}
 
 
-	public void compute(final int minMillisToLog) throws IOException, ClassNotFoundException {
+	public synchronized void compute(final int minMillisToLog) throws IOException, ClassNotFoundException {
 		if (this.minMillisToLog != minMillisToLog || !computed) {
 
 			uploadedFiles.readFiles(new FileMetadataReader() {
@@ -187,7 +187,7 @@ public class RequestsTimesAndStacks implements Serializable {
 		}
 	}
 
-	public List<TreeNode<StackStatElement>> computeGroupedStacksForRequestId(final String requestId) {
+	public synchronized List<TreeNode<StackStatElement>> computeGroupedStacksForRequestId(final String requestId) {
 		TreeNode<StackStatElement> groupedStacksRoot = groupedStacksRoots.get(requestId);
 		if (groupedStacksRoot == null) {
 			groupedStacksRoot = new TreeNode<StackStatElement>(null, null);

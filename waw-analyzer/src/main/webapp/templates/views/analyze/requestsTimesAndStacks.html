@@ -6,18 +6,14 @@
 		<table ng-table="tableParams" class="table table-bordered table-condensed table-hover table-striped">
 			<tr ng-repeat="request in orderedRequests">
 				<td title="URL">
-					<div class="tree">
-						<ul>
-							<li><input type="checkbox" id="{{request.id}}" /><label for="{{request.id}}">{{request.url}}</label>
-								<ul>
-									<li ng-model="request.groupedStacks">
-										<input type="checkbox" id="{{request.id}}-grouped" ng-click="computeGroupedStacks(request)"/><label for="{{request.id}}-grouped">Stacks grouped</label>
-										<ul>
-											<li ng-repeat="node in request.groupedStacks" ng-include="'recursiveGroupedStacks.html'" />
-										</ul>
-									</li>
-									<li><input type="checkbox" id="{{request.id}}-perrequest" /><label for="{{request.id}}-perrequest">Stacks per request</label></li>
-								</ul>
+					<div class="navbar">
+						<ul class="nav">
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown">{{request.url}}<b class="caret"></b></a>
+								<ul class="dropdown-menu">
+							  		<li><a href="" ng-click="goToGroupedStacks(request)">Stacks grouped</a></li>
+							  		<li><a href="">Stacks per request</a></li>
+							    </ul>
 							</li>
 						</ul>
 					</div>
@@ -31,15 +27,3 @@
 		</table>
 	</div>
 </div>
-
-<script type="text/ng-template" id="recursiveGroupedStacks.html">
-	<input type="checkbox" id="stack-{{node.id}}" ng-click="displayChildren(node)" /><label for="stack-{{node.id}}">{{node.stackTraceElement.element}} <b>{{node.stackTraceElement.nb}}</b></label>
-	<ul>
-		<li>
-			<p ng-repeat="element in node.stackTraceElements">{{element.element}} <b>{{element.nb}}</b></p>
-			<ul>
-				<li ng-repeat="node in node.displayedChildren" ng-include="'recursiveGroupedStacks.html'" />
-			</ul>
-		</li>
-	</ul>
-</script>
