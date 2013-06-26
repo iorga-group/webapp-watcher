@@ -9,6 +9,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -17,6 +21,9 @@ import java.util.Map;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.SessionScoped;
+import javax.enterprise.event.Event;
+import javax.inject.Inject;
+import javax.inject.Qualifier;
 
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
@@ -40,6 +47,9 @@ public class UploadedFiles implements Serializable {
 
 	private final Map<String, FileMetadata> files = Maps.newHashMap();
 	private int nextId = 0;
+
+	@Inject
+	private transient @FilesChanged Event<UploadedFiles> filesChangedEvent;
 
 	public static class FileMetadata implements Serializable {
 		private static final long serialVersionUID = 1L;
@@ -134,6 +144,11 @@ public class UploadedFiles implements Serializable {
 		protected abstract void handleEventLog(EventLog eventLog) throws IOException;
 	}
 
+	@Qualifier
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.TYPE})
+	public static @interface FilesChanged {}
+
 	/// Actions ///
 	//////////////
 	public FileMetadata addFile(final String fileName, final InputStream fileContent) throws IOException {
@@ -142,6 +157,7 @@ public class UploadedFiles implements Serializable {
 		IOUtils.copy(fileContent, new FileOutputStream(tempFile));
 		final FileMetadata uploadedFile = new FileMetadata(fileName, tempFile, nextId++);
 		files.put(uploadedFile.getId(), uploadedFile);
+		filesChangedEvent.fire(this);
 		return uploadedFile;
 	}
 
@@ -160,6 +176,7 @@ public class UploadedFiles implements Serializable {
 	private void deleteFile(final FileMetadata fileMetadata) {
 		fileMetadata.file.delete();
 		files.remove(fileMetadata.getId());
+		filesChangedEvent.fire(this);
 	}
 
 	/// Structure ///

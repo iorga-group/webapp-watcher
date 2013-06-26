@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.SessionScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -20,6 +21,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FileMetadataReader;
+import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FilesChanged;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
@@ -31,7 +33,7 @@ public class RequestsTimesAndStacks implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Inject
-	private UploadedFiles uploadedFiles;
+	private transient UploadedFiles uploadedFiles;
 
 	/// Parameters ///
 	private int minMillisToLog;
@@ -115,6 +117,15 @@ public class RequestsTimesAndStacks implements Serializable {
 		}
 		public T getData() {
 			return data;
+		}
+	}
+
+	public static class GenericListSupplier<V> implements Supplier<List<V>>, Serializable {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public List<V> get() {
+			return Lists.newArrayList();
 		}
 	}
 
@@ -223,15 +234,16 @@ public class RequestsTimesAndStacks implements Serializable {
 	}
 
 
+	/// Events ///
+	/////////////
+	public void onUploadedFilesChanged(@Observes @FilesChanged final UploadedFiles uploadedFiles) {
+		resetComputation();
+	}
+
 	/// Utils ///
 	////////////
 	private static <K, V> ListMultimap<K, V> newListMultimap() {
-		return Multimaps.newListMultimap(Maps.<K, Collection<V>>newHashMap(), new Supplier<List<V>>() {
-			@Override
-			public List<V> get() {
-				return Lists.newArrayList();
-			}
-		});
+		return Multimaps.newListMultimap(Maps.<K, Collection<V>>newHashMap(), new GenericListSupplier<V>());
 	}
 
 	private void recurseAddStackElement(final TreeNode<StackStatElement> parent, final StackTraceElement[] stackTrace, int stackIndex) {
@@ -260,5 +272,17 @@ public class RequestsTimesAndStacks implements Serializable {
 				recurseAddStackElement(node, stackTrace, stackIndex);
 			}
 		}
+	}
+
+	private void resetComputation() {
+		minMillisToLog = 0;
+
+		computed = false;
+		nextId = 0;
+		requestsByUrl.clear();
+		requestsById.clear();
+		slowRequestsById.clear();
+		slowRequestSystemLogs.clear();
+		groupedStacksRoots.clear();
 	}
 }
