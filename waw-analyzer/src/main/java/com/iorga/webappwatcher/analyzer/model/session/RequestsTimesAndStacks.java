@@ -45,6 +45,7 @@ public class RequestsTimesAndStacks implements Serializable {
 	private final Map<String, RequestTimes> requestsById = Maps.newHashMap();
 	private final ListMultimap<RequestEventLog, SystemEventLog> slowRequestSystemLogs = newListMultimap();
 	private final Map<String, TreeNode<StackStatElement>> groupedStacksRootsById = Maps.newHashMap();
+	private final Map<RequestEventLog, TreeNode<StackStatElement>> groupedStacksRootsByRequestEventLog = Maps.newHashMap();
 
 	public static class RequestTimes implements Serializable {
 		private static final long serialVersionUID = 1L;
@@ -210,20 +211,20 @@ public class RequestsTimesAndStacks implements Serializable {
 			// retrieve all the requests for that requestKey
 			final List<RequestEventLog> requests = requestsById.get(requestId).slowRequests;
 			for (final RequestEventLog request : requests) {
-				// retrieve all system logs for that request if any
-				final List<SystemEventLog> systems = slowRequestSystemLogs.get(request);
-				// for all that system events, will retrieve the thread of the request
-				for (final SystemEventLog system : systems) {
-					for (final Thread thread : system.getBlockedOrRunningThreads()) {
-						if (thread.getId() == request.getThreadId()) {
-							// This is the thread of the request, let's add the stack to the StackStatElement children
-							final StackTraceElement[] stackTraces = thread.getStackTrace();
-							recurseAddStackElement(groupedStacksRoot, stackTraces, stackTraces.length);
-							break; // found
-						}
-					}
-				}
+				computeGroupedStacksForRequest(request, groupedStacksRoot);
 			}
+		}
+		return groupedStacksRoot.getChildren();
+	}
+
+	public synchronized List<TreeNode<StackStatElement>> computeGroupedStacksForRequestIdAndRequestIndex(final String requestId, final int requestIndex) {
+		final RequestTimes requestTimes = requestsById.get(requestId);
+		final RequestEventLog requestEventLog = requestTimes.getSlowRequests().get(requestIndex);
+		TreeNode<StackStatElement> groupedStacksRoot = groupedStacksRootsByRequestEventLog.get(requestEventLog);
+		if (groupedStacksRoot == null) {
+			groupedStacksRoot = new TreeNode<StackStatElement>(null, null);
+			groupedStacksRootsByRequestEventLog.put(requestEventLog, groupedStacksRoot);
+			computeGroupedStacksForRequest(requestEventLog, groupedStacksRoot);
 		}
 		return groupedStacksRoot.getChildren();
 	}
@@ -255,6 +256,22 @@ public class RequestsTimesAndStacks implements Serializable {
 	////////////
 	private static <K, V> ListMultimap<K, V> newListMultimap() {
 		return Multimaps.newListMultimap(Maps.<K, Collection<V>>newHashMap(), new GenericListSupplier<V>());
+	}
+
+	private void computeGroupedStacksForRequest(final RequestEventLog request, final TreeNode<StackStatElement> groupedStacksRoot) {
+		// retrieve all system logs for that request if any
+		final List<SystemEventLog> systems = slowRequestSystemLogs.get(request);
+		// for all that system events, will retrieve the thread of the request
+		for (final SystemEventLog system : systems) {
+			for (final Thread thread : system.getBlockedOrRunningThreads()) {
+				if (thread.getId() == request.getThreadId()) {
+					// This is the thread of the request, let's add the stack to the StackStatElement children
+					final StackTraceElement[] stackTraces = thread.getStackTrace();
+					recurseAddStackElement(groupedStacksRoot, stackTraces, stackTraces.length);
+					break; // found
+				}
+			}
+		}
 	}
 
 	private void recurseAddStackElement(final TreeNode<StackStatElement> parent, final StackTraceElement[] stackTrace, int stackIndex) {
@@ -294,5 +311,6 @@ public class RequestsTimesAndStacks implements Serializable {
 		requestsById.clear();
 		slowRequestSystemLogs.clear();
 		groupedStacksRootsById.clear();
+		groupedStacksRootsByRequestEventLog.clear();
 	}
 }

@@ -39,4 +39,12 @@ public class GroupedStacksWS {
 
 		return jsonWriter.writeIterableWithTemplate(StackStatElementTreeTemplate.class, stacks);
 	}
+
+	@GET
+	@Path("/computeDetails/{requestId}/{requestIndex}")
+	public StreamingOutput computeDetails(@PathParam("requestId") final String requestId, @PathParam("requestIndex") final int requestIndex) {
+		final List<TreeNode<StackStatElement>> stacks = requestsTimesAndStacks.computeGroupedStacksForRequestIdAndRequestIndex(requestId, requestIndex);
+
+		return jsonWriter.writeIterableWithTemplate(StackStatElementTreeTemplate.class, stacks);
+	}
 }

@@ -25,9 +25,15 @@ public class PerRequestStacksListWS {
 	@SuppressWarnings("unused")
 	@JsonAutoDetect(fieldVisibility = Visibility.ANY)
 	public static class PerRequestStacksListTemplate {
-		private String url;
+		private final String url;
+		private final String id;
+		private final List<RequestTemplate> slowRequests = Lists.newLinkedList();
 
-		private List<RequestTemplate> slowRequests;
+		public PerRequestStacksListTemplate(final String url, final String id) {
+			this.url = url;
+			this.id = id;
+		}
+
 
 		@JsonAutoDetect(fieldVisibility = Visibility.ANY)
 		public static class RequestTemplate {
@@ -51,14 +57,10 @@ public class PerRequestStacksListWS {
 	public PerRequestStacksListTemplate compute(@PathParam("requestId") final String requestId) {
 		final RequestTimes requestTimes = requestsTimesAndStacks.getRequestTimesForId(requestId);
 
-		final PerRequestStacksListTemplate perRequestStacksListTemplate = new PerRequestStacksListTemplate();
-		perRequestStacksListTemplate.url = requestTimes.getUrl();
-
-		final List<RequestTemplate> slowRequests = Lists.newLinkedList();
-		perRequestStacksListTemplate.slowRequests = slowRequests;
+		final PerRequestStacksListTemplate perRequestStacksListTemplate = new PerRequestStacksListTemplate(requestTimes.getUrl(), requestTimes.getId());
 
 		for (final RequestEventLog requestEventLog : requestTimes.getSlowRequests()) {
-			slowRequests.add(new RequestTemplate(
+			perRequestStacksListTemplate.slowRequests.add(new RequestTemplate(
 				requestEventLog.getPrincipal(),
 				requestEventLog.getDate(),
 				requestEventLog.getAfterProcessedDate(),

@@ -1,5 +1,18 @@
+<div class="page-header">
+	<h1>Per request list <small>{{requestUrl}}</small></h1>
+</div>
 <table ng-table="tableParams" class="table table-bordered table-condensed table-hover table-striped">
 	<tr ng-repeat="request in orderedSlowRequests">
+		<td title="Actions">
+			<div class="dropdown">
+				<button type="button" data-toggle="dropdown" class="btn btn-primary btn-block">Actions<b class="caret" /></button>
+				<ul class="dropdown-menu" role="menu">
+					<li><a href="" ng-click="displayDetails(request)">Display details</a></li>
+					<li><a href="" ng-click="goToGroupedStacks(request)">Stacks grouped</a></li>
+			  		<li><a href="" ng-click="goToStackByStack(request)">Stack by stack</a></li>
+				</ul>
+			</div>
+		</td>
 		<td title="Principal" sortable="principal">{{request.principal}}</td>
 		<td title="Duration" sortable="duration">{{request.duration}}</td>
 		<td title="Nb Stacks" sortable="nbStacks">{{request.nbStacks}}</td>
