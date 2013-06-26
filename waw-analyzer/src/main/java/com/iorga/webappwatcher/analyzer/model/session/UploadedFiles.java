@@ -49,7 +49,7 @@ public class UploadedFiles implements Serializable {
 	private int nextId = 0;
 
 	@Inject
-	private transient @FilesChanged Event<UploadedFiles> filesChangedEvent;
+	private @FilesChanged Event<UploadedFiles> filesChangedEvent;
 
 	public static class FileMetadata implements Serializable {
 		private static final long serialVersionUID = 1L;

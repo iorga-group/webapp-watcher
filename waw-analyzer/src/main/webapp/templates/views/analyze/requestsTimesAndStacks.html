@@ -1,29 +1,25 @@
-<div class="row-fluid">
-	<div class="span12">
-		<form ng-submit="compute()">
-			<button type="submit" class="btn">Compute</button>
-		</form>
-		<table ng-table="tableParams" class="table table-bordered table-condensed table-hover table-striped">
-			<tr ng-repeat="request in orderedRequests">
-				<td title="URL">
-					<div class="navbar">
-						<ul class="nav">
-							<li class="dropdown">
-								<a href="#" class="dropdown-toggle" data-toggle="dropdown">{{request.url}}<b class="caret"></b></a>
-								<ul class="dropdown-menu">
-							  		<li><a href="" ng-click="goToGroupedStacks(request)">Stacks grouped</a></li>
-							  		<li><a href="">Stacks per request</a></li>
-							    </ul>
-							</li>
-						</ul>
-					</div>
-				</td>
-				<td title="Number" sortable="n">{{request.n}}</td>
-				<td title="Mean" sortable="mean">{{request.mean}}</td>
-				<td title="Median" sortable="median">{{request.median}}</td>
-				<td title="Min" sortable="min">{{request.min}}</td>
-				<td title="Max" sortable="max">{{request.max}}</td>
-			</tr>
-		</table>
-	</div>
-</div>
+<form ng-submit="compute()">
+	<button type="submit" class="btn">Compute</button>
+</form>
+<table ng-table="tableParams" class="table table-bordered table-condensed table-hover table-striped">
+	<tr ng-repeat="request in orderedRequests">
+		<td title="URL">
+			<div class="navbar">
+				<ul class="nav">
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">{{request.url}}<b class="caret"></b></a>
+						<ul class="dropdown-menu">
+					  		<li><a href="" ng-click="goToGroupedStacks(request)">Stacks grouped</a></li>
+					  		<li><a href="" ng-click="goToPerRequestStacksList(request)">Stacks per request</a></li>
+					    </ul>
+					</li>
+				</ul>
+			</div>
+		</td>
+		<td title="Number" sortable="n">{{request.n}}</td>
+		<td title="Mean" sortable="mean">{{request.mean}}</td>
+		<td title="Median" sortable="median">{{request.median}}</td>
+		<td title="Min" sortable="min">{{request.min}}</td>
+		<td title="Max" sortable="max">{{request.max}}</td>
+	</tr>
+</table>

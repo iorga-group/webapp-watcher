@@ -33,7 +33,7 @@ public class RequestsTimesAndStacks implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Inject
-	private transient UploadedFiles uploadedFiles;
+	private UploadedFiles uploadedFiles;
 
 	/// Parameters ///
 	private int minMillisToLog;
@@ -41,13 +41,10 @@ public class RequestsTimesAndStacks implements Serializable {
 	/// Variables structure ///
 	private boolean computed = false;
 	private int nextId = 0;
-//	private final Map<String, DescriptiveStatistics> requests = Maps.newHashMap();
 	private final Map<String, RequestTimes> requestsByUrl = Maps.newHashMap();
 	private final Map<String, RequestTimes> requestsById = Maps.newHashMap();
-	private final ListMultimap<String, RequestEventLog> slowRequestsById = newListMultimap();
 	private final ListMultimap<RequestEventLog, SystemEventLog> slowRequestSystemLogs = newListMultimap();
-	private final Map<String, TreeNode<StackStatElement>> groupedStacksRoots = Maps.newHashMap();
-//	private List<Entry<String, DescriptiveStatistics>> sortedRequestlist;
+	private final Map<String, TreeNode<StackStatElement>> groupedStacksRootsById = Maps.newHashMap();
 
 	public static class RequestTimes implements Serializable {
 		private static final long serialVersionUID = 1L;
@@ -55,6 +52,7 @@ public class RequestsTimesAndStacks implements Serializable {
 		private final String id;
 		private final String url;
 		private final DescriptiveStatistics statistics = new DescriptiveStatistics();
+		private final List<RequestEventLog> slowRequests = Lists.newArrayList();
 
 		public RequestTimes(final String url, final int id) {
 			this.url = url;
@@ -69,6 +67,9 @@ public class RequestsTimesAndStacks implements Serializable {
 		}
 		public DescriptiveStatistics getStatistics() {
 			return statistics;
+		}
+		public List<RequestEventLog> getSlowRequests() {
+			return slowRequests;
 		}
 	}
 
@@ -130,6 +131,9 @@ public class RequestsTimesAndStacks implements Serializable {
 	}
 
 
+	/// Actions ///
+	//////////////
+
 	public synchronized void compute(final int minMillisToLog) throws IOException, ClassNotFoundException {
 		if (this.minMillisToLog != minMillisToLog || !computed) {
 
@@ -169,7 +173,7 @@ public class RequestsTimesAndStacks implements Serializable {
 							requestTimes.statistics.addValue(durationMillis);
 							// if the duration is more than the defined minimum, log it
 							if (durationMillis >= minMillisToLog) {
-								slowRequestsById.put(requestTimes.id, request);
+								requestTimes.slowRequests.add(request);
 								currentSlowRequests.add(request);
 							}
 						} else {
@@ -199,12 +203,12 @@ public class RequestsTimesAndStacks implements Serializable {
 	}
 
 	public synchronized List<TreeNode<StackStatElement>> computeGroupedStacksForRequestId(final String requestId) {
-		TreeNode<StackStatElement> groupedStacksRoot = groupedStacksRoots.get(requestId);
+		TreeNode<StackStatElement> groupedStacksRoot = groupedStacksRootsById.get(requestId);
 		if (groupedStacksRoot == null) {
 			groupedStacksRoot = new TreeNode<StackStatElement>(null, null);
-			groupedStacksRoots.put(requestId, groupedStacksRoot);
+			groupedStacksRootsById.put(requestId, groupedStacksRoot);
 			// retrieve all the requests for that requestKey
-			final List<RequestEventLog> requests = slowRequestsById.get(requestId);
+			final List<RequestEventLog> requests = requestsById.get(requestId).slowRequests;
 			for (final RequestEventLog request : requests) {
 				// retrieve all system logs for that request if any
 				final List<SystemEventLog> systems = slowRequestSystemLogs.get(request);
@@ -233,6 +237,13 @@ public class RequestsTimesAndStacks implements Serializable {
 		}).reverse().sortedCopy(requestsByUrl.values());
 	}
 
+	public RequestTimes getRequestTimesForId(final String requestId) {
+		return requestsById.get(requestId);
+	}
+
+	public int getNbStacksForRequestEventLog(final RequestEventLog requestEventLog) {
+		return slowRequestSystemLogs.get(requestEventLog).size();
+	}
 
 	/// Events ///
 	/////////////
@@ -281,8 +292,7 @@ public class RequestsTimesAndStacks implements Serializable {
 		nextId = 0;
 		requestsByUrl.clear();
 		requestsById.clear();
-		slowRequestsById.clear();
 		slowRequestSystemLogs.clear();
-		groupedStacksRoots.clear();
+		groupedStacksRootsById.clear();
 	}
 }

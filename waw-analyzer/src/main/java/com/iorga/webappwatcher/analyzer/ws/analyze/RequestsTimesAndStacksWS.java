@@ -13,8 +13,6 @@ import com.iorga.iraj.annotation.ContextParam;
 import com.iorga.iraj.json.JsonWriter;
 import com.iorga.webappwatcher.analyzer.model.session.RequestsTimesAndStacks;
 import com.iorga.webappwatcher.analyzer.model.session.RequestsTimesAndStacks.RequestTimes;
-import com.iorga.webappwatcher.analyzer.model.session.RequestsTimesAndStacks.StackStatElement;
-import com.iorga.webappwatcher.analyzer.model.session.RequestsTimesAndStacks.TreeNode;
 
 @Path("/analyze/requestsTimesAndStacks")
 public class RequestsTimesAndStacksWS {
@@ -52,24 +50,5 @@ public class RequestsTimesAndStacksWS {
 		final List<RequestTimes> requests = requestsTimesAndStacks.createSortedRequestByDescendantMeanList();
 
 		return jsonWriter.writeIterableWithTemplate(RequestTimesTemplate.class, requests);
-	}
-
-	@ContextParam(value = TreeNode.class, parameterizedArguments = StackStatElement.class)
-	public static class StackStatElementTreeTemplate {
-		List<StackStatElementTreeTemplate> children;
-
-		public static String getStackTraceElement(final TreeNode<StackStatElement> node) {
-			return node.getData().getStackTraceElement().toString();
-		}
-		public static int getNb(final TreeNode<StackStatElement> node) {
-			return node.getData().getNb();
-		}
-	}
-	@GET
-	@Path("/computeGroupedStacks/{requestId}")
-	public StreamingOutput computeGroupedStacks(@PathParam("requestId") final String requestId) {
-		final List<TreeNode<StackStatElement>> stacks = requestsTimesAndStacks.computeGroupedStacksForRequestId(requestId);
-
-		return jsonWriter.writeIterableWithTemplate(StackStatElementTreeTemplate.class, stacks);
 	}
 }

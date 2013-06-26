@@ -13,6 +13,10 @@ function RequestsTimesAndStacksCtrl($http, $scope, irajTableService, irajBreadcr
 		irajBreadcrumbsService.changePathAndPush($scope, '/analyze/groupedStacks/'+request.id);
 	}
 	
+	$scope.goToPerRequestStacksList = function(request) {
+		irajBreadcrumbsService.changePathAndPush($scope, '/analyze/perRequestStacksList/'+request.id);
+	}
+	
 	/// Initialization ///
 	/////////////////////
 	irajBreadcrumbsService.setLastLabel('Requests times and stacks');

@@ -13,7 +13,7 @@ function GroupedStacksCtrl(irajBreadcrumbsService, $routeParams, $http, $scope) 
 	var requestId = $routeParams.requestId;
 
 	// load the groupedStacks
-	$http.get('api/analyze/requestsTimesAndStacks/computeGroupedStacks/'+requestId, {irajClearAllMessages: true})
+	$http.get('api/analyze/groupedStacks/compute/'+requestId, {irajClearAllMessages: true})
 		.success(function(data, status, headers, config) {
 			var nodes = data;
 			// we will "flatten" the nodes in order to display all children in <p/>s if there is only 1 child each time
