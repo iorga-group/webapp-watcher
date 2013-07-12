@@ -214,6 +214,7 @@ public class AgglomeratorServlet extends CacheAwareServlet {
 	}
 
 	private void parseResource(final ServletConfig config, final String path) throws IOException, URISyntaxException {
+		//TODO catch the modifications on the path itself
 		final URL pathUrl = config.getServletContext().getResource(path);
 		long lastModified = pathUrl.openConnection().getLastModified();
 		final InputStream targetIS = pathUrl.openStream();

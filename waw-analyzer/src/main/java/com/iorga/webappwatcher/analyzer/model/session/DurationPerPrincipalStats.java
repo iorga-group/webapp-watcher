@@ -2,13 +2,19 @@ package com.iorga.webappwatcher.analyzer.model.session;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.SessionScoped;
+import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import javax.inject.Qualifier;
 
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -36,6 +42,9 @@ public class DurationPerPrincipalStats implements Serializable {
 
 	@Inject
 	private Configurations configurations;
+
+	@Inject
+	private @Changed Event<DurationPerPrincipalStats> changedEvent;
 
 	public static class TimeSlice implements Serializable {
 		private static final long serialVersionUID = 1L;
@@ -71,6 +80,12 @@ public class DurationPerPrincipalStats implements Serializable {
 		}
 		public Map<String, StatsPerPrincipal> getStatsPerPrincipal() {
 			return statsPerPrincipal;
+		}
+		public DescriptiveStatistics getCpuUsage() {
+			return cpuUsage;
+		}
+		public DescriptiveStatistics getMemoryUsage() {
+			return memoryUsage;
 		}
 	}
 
@@ -128,6 +143,11 @@ public class DurationPerPrincipalStats implements Serializable {
 		}
 	}
 
+	@Qualifier
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.TYPE})
+	public static @interface Changed {}
+
 	private final List<TimeSlice> timeSlices = Lists.newArrayList();	// to search by dichotomy
 	private int lastAccessedTimeSliceIndex = -1;
 	private final Map<String, PrincipalContext> principalContexts = Maps.newHashMap();
@@ -179,6 +199,12 @@ public class DurationPerPrincipalStats implements Serializable {
 		compute();
 
 		return timeSlices;
+	}
+
+	public DescriptiveStatistics computeTotalDurationsFor1click() throws ClassNotFoundException, IOException {
+		compute();
+
+		return totalDurationsFor1click;
 	}
 
 	/// Events ///
@@ -239,6 +265,8 @@ public class DurationPerPrincipalStats implements Serializable {
 
 			this.timeSliceDurationMillis = timeSliceDurationMillis;
 			this.computed = true;
+
+			changedEvent.fire(this);
 		}
 	}
 

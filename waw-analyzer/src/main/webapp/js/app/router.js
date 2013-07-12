@@ -9,4 +9,5 @@ function router($routeProvider) {
 		.when('/analyze/perRequestStacksList/:requestId', {controller:PerRequestStacksListCtrl, templateUrl: 'templates/views/analyze/perRequestStacksList.html'})
 		.when('/statistics/daily', {controller:DailyStatisticsCtrl, templateUrl: 'templates/views/statistics/dailyStatistics.html'})
 		.when('/statistics/timeSliceList', {controller:TimeSliceListCtrl, templateUrl: 'templates/views/statistics/timeSliceList.html'})
+		.when('/graphs/requestsGraph', {controller:RequestsGraphCtrl, templateUrl: 'templates/views/graphs/requestsGraph.html'})
 };
