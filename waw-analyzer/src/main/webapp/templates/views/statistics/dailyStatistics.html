@@ -1,0 +1,15 @@
+<table class="table table-bordered table-condensed table-hover table-striped">
+	<tbody ng-repeat="dayStatistic in dayStatistics">
+		<!-- headers -->
+		<tr><th colspan="{{dayStatistic.statistics.length + 1}}">{{dayStatistic.dateName}}</th></tr>
+		<tr>
+			<th/>
+			<th ng-repeat="statistic in dayStatistic.statistics">{{statistic.type}}</th>
+		</tr>
+		<!-- datas -->
+		<tr ng-repeat="statisticRowType in statisticRowTypes">
+			<th>{{statisticRowType}}</th>
+			<td ng-repeat="statistic in dayStatistic.statistics">{{statistic[statisticRowType]}}</td>
+		</tr>
+	</tbody>
+</table>

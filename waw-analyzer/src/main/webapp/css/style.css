@@ -34,31 +34,3 @@ a {
 .tree li + p:before {
 	content: "\f078";	/* icon-chevron-down with font-awesome */
 }
-
-.tree input + label + ul {
-	display: none;
-}
-.tree input:checked + label + ul {
-	display: block;
-}
-.tree input + label:before {
-	/* http://stackoverflow.com/a/11919684/535203 */
-	font-family: FontAwesome;
-	font-weight: normal;
-	font-style: normal;
-	display: inline-block;
-	text-decoration: inherit;
-	margin-right: 4px;
-	content: "\f054";	/* icon-chevron-right with font-awesome */
-}
-.tree input:checked + label:before {
-	content: "\f078";	/* icon-chevron-down with font-awesome */
-}
-.tree input {
-	position: absolute;
-	opacity: 0;
-}
-.tree input:disabled + label {
-	cursor: default; /* or no-drop */
-	opacity: .6;
-}

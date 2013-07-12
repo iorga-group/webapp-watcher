@@ -1,0 +1,12 @@
+<table class="table table-bordered table-condensed table-hover table-striped">
+	<thead>
+		<tr>
+			<th ng-repeat="statisticType in statisticTypes">{{statisticType}}</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr ng-repeat="timeSlice in timeSlices">
+			<td ng-repeat="statisticType in statisticTypes">{{timeSlice[statisticType]}}</td>
+		</tr>
+	</tbody>
+</table>

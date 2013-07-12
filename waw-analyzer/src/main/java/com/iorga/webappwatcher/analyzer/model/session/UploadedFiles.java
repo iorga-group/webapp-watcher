@@ -37,8 +37,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.iorga.webappwatcher.EventLogManager;
+import com.iorga.webappwatcher.analyzer.util.RequestActionFilter;
 import com.iorga.webappwatcher.analyzer.ws.session.UploadedFilesWS;
 import com.iorga.webappwatcher.eventlog.EventLog;
+import com.iorga.webappwatcher.eventlog.RequestEventLog;
 
 @SessionScoped
 public class UploadedFiles implements Serializable {
@@ -142,6 +144,23 @@ public class UploadedFiles implements Serializable {
 		}
 
 		protected abstract void handleEventLog(EventLog eventLog) throws IOException;
+	}
+
+	public abstract static class RequestActionFileMetadataReader extends FileMetadataReader {
+		private final RequestActionFilter actionFilter;
+
+		public RequestActionFileMetadataReader(final RequestActionFilter actionFilter) {
+			this.actionFilter = actionFilter;
+		}
+
+		@Override
+		protected void handleEventLog(final EventLog eventLog) throws IOException {
+			if (eventLog instanceof RequestEventLog && actionFilter.isAnActionRequest((RequestEventLog) eventLog)) {
+				handleActionRequestEventLog((RequestEventLog) eventLog);
+			}
+		}
+
+		protected abstract void handleActionRequestEventLog(RequestEventLog requestEventLog) throws IOException;
 	}
 
 	@Qualifier

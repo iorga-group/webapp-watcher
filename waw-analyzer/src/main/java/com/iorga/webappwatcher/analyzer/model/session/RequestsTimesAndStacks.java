@@ -32,6 +32,7 @@ import com.iorga.webappwatcher.eventlog.SystemEventLog.Thread;
 public class RequestsTimesAndStacks implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	/// Dependencies ///
 	@Inject
 	private UploadedFiles uploadedFiles;
 
