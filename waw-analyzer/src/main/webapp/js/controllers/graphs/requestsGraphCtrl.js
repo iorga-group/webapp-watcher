@@ -1,6 +1,43 @@
 function RequestsGraphCtrl($scope, $http, irajMessageService, irajBreadcrumbsService, flotUtilsService) {
 	/// Action methods ///
 	/////////////////////
+	$scope.switchSerie = function(serie) {
+		serie.displayed = !serie.displayed;
+		
+		$scope.redraw();
+	}
+	
+	$scope.redraw = function() {
+		var series = [];
+		for (var i = 0 ; i < $scope.series.length ; i++) {
+			if ($scope.series[i].displayed) {
+				series.push($scope.series[i]);
+			}
+		}
+		var plot = $.plot($("#placeholder"), series,
+	   		{
+				xaxes: [{ mode: "time", timezone: "browser"}],
+				yaxes: [
+				        {axisLabel: 'nb of actions', zoomRange: false, panRange: false},	// durationsFor1clickSeries
+				        {zoomRange: false, panRange: false, position: 'right', tickFormatter: flotUtilsService.cpuUsageFormatter},	// CPU
+				        {zoomRange: false, panRange: false, position: 'right', tickFormatter: flotUtilsService.memoryFormatter},		// Memory
+				        {axisLabel: 'nb of users', zoomRange: false, panRange: false},		// Users
+				        {axisLabel: 'milliseconds', zoomRange: false, panRange: false}		// Median
+				        ],
+				crosshair: { mode : "x" },
+				grid: { hoverable: true, clickable: true, autoHighlight: false },
+				legend: { position: 'nw' },
+		        zoom: {
+		            interactive: true
+		        },
+		        pan: {
+		            interactive: true
+		        }
+			}
+		);
+		
+		flotUtilsService.addUpdateLegendsOnPlotHoverFunction(plot);
+	}
 	
 	/// Initialization ///
 	/////////////////////
@@ -26,8 +63,9 @@ function RequestsGraphCtrl($scope, $http, irajMessageService, irajBreadcrumbsSer
 		for (var i = 0 ; i < durationsFor1clickDispersionSeries.length ; i++) {
 			var dispersionSerie = durationsFor1clickDispersionSeries[i];
 			series.push({
+				displayed: true,
 				data: dateDoubleValueListToData(dispersionSerie.data),
-				label: dispersionSerie.min+' - '+dispersionSerie.max,
+				label: dispersionSerie.min+' - '+dispersionSerie.max+' ms',
 				stack:true,
 				lines:{show:true,fill:true}
 			});
@@ -37,28 +75,8 @@ function RequestsGraphCtrl($scope, $http, irajMessageService, irajBreadcrumbsSer
 		series.push({ data: dateDoubleValueListToData(nbUsersMax), label: "Users", yaxis: 4, color: '#888888'});
 		series.push({ data: dateDoubleValueListToData(durationsFor1clickMedians), label: "Median", yaxis: 5, color: '#000000'});
 		
-		var plot = $.plot($("#placeholder"), series,
-	   		{
-				xaxes: [{ mode: "time", timezone: "browser"}],
-				yaxes: [
-				        {axisLabel: 'nb of actions', zoomRange: false, panRange: false},	// durationsFor1clickSeries
-				        {zoomRange: false, panRange: false, position: 'right', tickFormatter: flotUtilsService.cpuUsageFormatter},	// CPU
-				        {zoomRange: false, panRange: false, position: 'right', tickFormatter: flotUtilsService.memoryFormatter},		// Memory
-				        {axisLabel: 'nb of users', zoomRange: false, panRange: false},		// Users
-				        {axisLabel: 'milliseconds', zoomRange: false, panRange: false}		// Median
-				        ],
-				crosshair: { mode : "x" },
-				grid: { hoverable: true, clickable: true, autoHighlight: false },
-				legend: { position: 'nw' },
-		        zoom: {
-		            interactive: true
-		        },
-		        pan: {
-		            interactive: true
-		        }
-			}
-		);
+		$scope.series = series;
 		
-		flotUtilsService.addUpdateLegendsOnPlotHoverFunction(plot);
+		$scope.redraw();
 	});
 }

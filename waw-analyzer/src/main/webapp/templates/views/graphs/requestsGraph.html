@@ -1,1 +1,12 @@
+<button type="button" class="btn" bs-popover="'selectSeries.html'" data-placement="bottom">Change displayed series</button>
+
+<script type="text/ng-template" id="selectSeries.html">
+	<form>
+		<label>Select the series to display</label>
+		<label class="checkbox" ng-repeat="serie in series">
+			<input type="checkbox" ng-model="serie.displayed" ng-change="redraw()"><div style="float: left; width:10px; height: 10px; margin-top: 5px; margin-right: 2px; background-color: {{serie.color}}"/> {{serie.label}}
+		</label>
+	</form>
+</script>
+
 <div id="placeholder" style="width:100%;height:600px;"></div>
