@@ -5,6 +5,9 @@ TAG=$1
 
 TMP_DIR=/dev/shm/webappwatcher-distribution
 
+# Using Java 7
+PATH=/usr/lib/jvm/java-7-openjdk-amd64/bin:$PATH
+
 # Create trap function which will stops the program if there is a problem with sub-calls
 trap catch_error ERR;
 function catch_error {
@@ -47,9 +50,12 @@ cp -r * .git* $NEW_RELEASE_DIR/src/
 # Build de la distribution
 cd webappwatcher-parent
 mvn package
+# Build de waw-analyzer
+cd ../waw-analyzer-parent
+mvn package
 # Copie des fichiers générés
 cd ..
-cp webappwatcher-web/target/webappwatcher-web-*.war $NEW_RELEASE_DIR/
+cp waw-analyzer/target/waw-analyzer-*.war $NEW_RELEASE_DIR/
 mkdir tmp
 cd tmp
 tar xvzf ../webappwatcher/target/*-distribution.tar.gz

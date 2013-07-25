@@ -31,7 +31,6 @@
 
 	<modules>
 		<module>../webappwatcher</module>
-		<module>../webappwatcher-web</module>
 	</modules>
 
 	<build>
