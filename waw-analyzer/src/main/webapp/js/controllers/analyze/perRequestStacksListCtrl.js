@@ -27,7 +27,10 @@ function PerRequestStacksListCtrl($http, $scope, irajTableService, irajBreadcrum
 				var slowRequests = data.slowRequests;
 				// Add the index
 				for (var i = 0 ; i < data.slowRequests.length ; i++) {
-					slowRequests[i].index = i;
+					var slowRequest = slowRequests[i];
+					slowRequest.index = i;
+					slowRequest.startDateDisplay = moment(slowRequest.startDate).format('llll');
+					slowRequest.endDateDisplay = moment(slowRequest.endDate).format('llll');
 				}
 				$scope.slowRequests = slowRequests;
 			});
