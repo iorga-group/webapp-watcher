@@ -32,6 +32,7 @@
 		<version.commons-io>2.4</version.commons-io>
 		<version.commons-collections>3.2.1</version.commons-collections>
 		<version.jsoup>1.7.2</version.jsoup>
+		<version.tomcat-catalina>7.0.42</version.tomcat-catalina>
 		<!-- 
 		<version.jackson>2.1.4</version.jackson>
 		 -->
@@ -252,6 +253,13 @@ encoding/<project>=UTF-8]]>
 				<groupId>javax.servlet</groupId>
 				<artifactId>javax.servlet-api</artifactId>
 				<version>3.0.1</version>
+				<type>jar</type>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.tomcat</groupId>
+				<artifactId>tomcat-catalina</artifactId>
+				<version>${version.tomcat-catalina}</version>
 				<type>jar</type>
 				<scope>provided</scope>
 			</dependency>
