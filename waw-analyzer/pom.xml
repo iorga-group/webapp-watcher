@@ -115,10 +115,43 @@
 					</additionalProjectFacets>
 					<additionalProjectnatures>
 						<projectnature>org.jboss.tools.cdi.core.cdinature</projectnature>
-						<projectnature>org.jboss.tools.jsf.jsfnature</projectnature>
 						<projectnature>org.jboss.tools.jst.web.kb.kbnature</projectnature>
 					</additionalProjectnatures>
 					<packaging>war</packaging>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-filtered-resources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>src/main/resources</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/main/filtered-resources</directory>
+									<filtering>true</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>src/main/resources</directory>
+							<includes>
+								<include>maven.properties</include>
+							</includes>
+						</fileset>
+					</filesets>
 				</configuration>
 			</plugin>
 		</plugins>

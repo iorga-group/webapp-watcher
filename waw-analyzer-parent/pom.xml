@@ -11,6 +11,8 @@
 		<!-- Project globals -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.7</java.version>
+		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+		<waw-analyzer.build.timestamp>${maven.build.timestamp}</waw-analyzer.build.timestamp>
 
 		<!-- artifact versions -->
 		<version.webappwatcher>1.5.1-SNAPSHOT</version.webappwatcher>

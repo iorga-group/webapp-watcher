@@ -1,4 +1,9 @@
-function HomeCtrl($scope, $http, $location) {
+function HomeCtrl($scope, $http, irajBreadcrumbsService) {
 	
-	$scope.title = "WAW - Analyzer";
+	/// Initialization ///
+	/////////////////////
+	$http.get('api/home/versions').success(function(data) {
+		$scope.versions = data;
+	});
+	irajBreadcrumbsService.setLastLabel('WAW - Analyzer');
 }

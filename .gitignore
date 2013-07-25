@@ -6,3 +6,4 @@ bin
 test-output
 *.jsfdia
 *~
+waw-analyzer/src/main/resources/maven.properties

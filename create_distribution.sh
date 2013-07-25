@@ -52,7 +52,7 @@ cd webappwatcher-parent
 mvn package
 # Build de waw-analyzer
 cd ../waw-analyzer-parent
-mvn package
+mvn package "-Dwaw-analyzer.tag=$TAG"
 # Copie des fichiers générés
 cd ..
 cp waw-analyzer/target/waw-analyzer-*.war $NEW_RELEASE_DIR/

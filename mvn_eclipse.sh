@@ -15,9 +15,12 @@ function catch_int {
 }
 
 cd webappwatcher-parent
+mvn install
+
+cd ../waw-analyzer-parent
 mvn clean
 mvn eclipse:clean
-mvn eclipse:eclipse
+mvn eclipse:eclipse "-Dwaw-analyzer.tag=`git describe --tags`"
 
 echo "End of script"
 read PAUSE
