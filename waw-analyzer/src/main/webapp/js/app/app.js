@@ -6,6 +6,8 @@ var module = angular.module('waw-analyzer', [
 		'iraj-progress-interceptor',
 		'iraj-table-service',
 		'blueimp.fileupload',
-		'flotutils-service'])
+		'flotutils-service',
+		'graphutils-service',
+		'requestsGraphPerDayPlot'])
 	.config(router)
 ;

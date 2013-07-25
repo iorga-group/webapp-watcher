@@ -3,12 +3,10 @@
 angular.module('flotutils-service', [])
 	.factory('flotUtilsService', function($timeout) {
 		var flotUtilsService = {};
-		flotUtilsService.updateLegends = function(plot, pos, updateLegendTimeout) {
-			var legends = $("#"+plot.getPlaceholder().attr('id')+" .legendLabel");
+		flotUtilsService.updateLegends = function(plot, pos) {
+			var legends = plot.getPlaceholder().find(".legendLabel");
 				
 			var axes = plot.getAxes();
-			
-			updateLegendTimeout.timeout = null;
 			
 			if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max)
 				return;
@@ -50,21 +48,33 @@ angular.module('flotutils-service', [])
 		}
 		
 		flotUtilsService.removeEqualSignFromLegends = function(plot) {
-			$("#"+plot.getPlaceholder().attr('id')+" .legendLabel").each(function() {
+			plot.getPlaceholder().find(".legendLabel").each(function() {
 				$(this).text($(this).text().replace(/=.*/, ""));
 			});
 		}
 		
 		flotUtilsService.addUpdateLegendsOnPlotHoverFunction = function(plot) {
-			var updateLegendTimeout = {timeout: null};
+			var previousTimeoutPromise,
+				canMakeAnotherTimeout = true,
+				makeAnotherTimeoutPossible = function() {
+					canMakeAnotherTimeout = true;
+				}
 			plot.getPlaceholder().bind("plothover",  function (event, pos, item) {
-				if (!updateLegendTimeout.timeout) {
-					updateLegendTimeout.timeout = $timeout(function() {
-						flotUtilsService.updateLegends(plot, pos, updateLegendTimeout);
+				if (canMakeAnotherTimeout) {
+					canMakeAnotherTimeout = false;
+					previousTimeoutPromise = $timeout(function() {
+						flotUtilsService.updateLegends(plot, pos);
 					}, 50);
+					// if success or failure, let's authorize next timeout call
+					previousTimeoutPromise.then(makeAnotherTimeoutPossible, makeAnotherTimeoutPossible);
 				}
 			});
-			plot.getPlaceholder().on('mouseleave', function() {flotUtilsService.removeEqualSignFromLegends(plot);});
+			
+			plot.getPlaceholder().on('mouseleave', function() {
+				$timeout.cancel(previousTimeoutPromise);
+				makeAnotherTimeoutPossible(); // weirdly not called as a errorCallback of the promise...
+				flotUtilsService.removeEqualSignFromLegends(plot);
+			});
 		}
 		
 		flotUtilsService.memoryFormatter = function(v, axis) {

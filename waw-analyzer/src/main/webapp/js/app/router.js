@@ -10,4 +10,5 @@ function router($routeProvider) {
 		.when('/statistics/daily', {controller:DailyStatisticsCtrl, templateUrl: 'templates/views/statistics/dailyStatistics.html'})
 		.when('/statistics/timeSliceList', {controller:TimeSliceListCtrl, templateUrl: 'templates/views/statistics/timeSliceList.html'})
 		.when('/graphs/requestsGraph', {controller:RequestsGraphCtrl, templateUrl: 'templates/views/graphs/requestsGraph.html'})
+		.when('/graphs/requestsGraphPerDay', {controller:RequestsGraphPerDayCtrl, templateUrl: 'templates/views/graphs/requestsGraphPerDay.html'})
 };
