@@ -27,7 +27,7 @@
 	</form>
 </script>
 
-<div ng-repeat="(dateName, seriePerDay) in seriesPerDay">
-	<h2>{{dateName}}</h2>
+<div ng-repeat="seriePerDay in seriesPerDay">
+	<h2>{{seriePerDay.dateName}}</h2>
 	<div requests-graph-per-day-plot="seriePerDay" style="width:100%;height:311px;" />
 </div>

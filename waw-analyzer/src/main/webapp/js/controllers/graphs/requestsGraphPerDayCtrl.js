@@ -11,7 +11,8 @@ function RequestsGraphPerDayCtrl($scope, $http, irajMessageService, irajBreadcru
 			serieTypes = [];
 		
 		// now compute the series per day
-		var seriesPerDay = {},
+		var seriesPerDayByDateName = {},
+			seriesPerDay = [],
 			currentSeriePerDay,
 			yaxes = {}; // will store the min & max of all series
 			xaxis = {min: {hours: 23, minutes: 59, seconds: 59}, max: {hours: 0, minutes: 0, seconds: 0}};
@@ -30,17 +31,18 @@ function RequestsGraphPerDayCtrl($scope, $http, irajMessageService, irajBreadcru
 				var currentData = data[j];
 				var currentDateTime = moment(currentData[0]);
 				var dateName = currentDateTime.format('dddd LL');
-				var currentSeriePerDay = seriesPerDay[dateName];
+				var currentSeriePerDay = seriesPerDayByDateName[dateName];
 				if (!currentSeriePerDay) {
 					// new seriePerDay
 					currentSeriePerDay = {
 						dateName: dateName,
 						firstMoment: currentDateTime,
-						id: Object.keys(seriesPerDay).length,
+						id: Object.keys(seriesPerDayByDateName).length,
 						seriesByLabel: {},
 						durationsFor1clickSum: {}
 					};
-					seriesPerDay[dateName] = currentSeriePerDay;
+					seriesPerDayByDateName[dateName] = currentSeriePerDay;
+					seriesPerDay.push(currentSeriePerDay);
 				}
 				var currentSerie = currentSeriePerDay.seriesByLabel[serie.label];
 				if (!currentSerie) {
