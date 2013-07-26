@@ -34,3 +34,12 @@ a {
 .tree li + p:before {
 	content: "\f078";	/* icon-chevron-down with font-awesome */
 }
+
+/* from http://stackoverflow.com/a/10513686/535203 */
+#requestDetailsModal {
+	width: 90%; /* desired relative width */
+	left: 5%; /* (100%-width)/2 */
+	/* place center */
+	margin-left:auto;
+	margin-right:auto; 
+}

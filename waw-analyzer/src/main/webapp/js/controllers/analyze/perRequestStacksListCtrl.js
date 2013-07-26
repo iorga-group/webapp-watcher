@@ -5,6 +5,17 @@ function PerRequestStacksListCtrl($http, $scope, irajTableService, irajBreadcrum
 		irajBreadcrumbsService.changePathAndPush($scope, '/analyze/groupedStacks/'+$scope.requestId+'/'+request.index);
 	}
 	
+	$scope.displayDetails = function(request) {
+		$http.get('api/analyze/perRequestStacksList/requestDetails/'+$scope.requestId+'/'+request.index).success(function(data) {
+			var requestDetails = data,
+				dateFormat = 'ddd, L HH:mm:ss';
+			requestDetails.startDateDisplay = moment(requestDetails.startDate).format(dateFormat);
+			requestDetails.endDateDisplay = moment(requestDetails.endDate).format(dateFormat);
+			$scope.requestDetails = requestDetails;
+			$('#requestDetailsModal').modal('show');
+		});
+	}
+	
 	/// Initialization ///
 	/////////////////////
 	irajBreadcrumbsService.setLastLabel('Per request stacks list');

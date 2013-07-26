@@ -219,8 +219,7 @@ public class RequestsTimesAndStacks implements Serializable {
 	}
 
 	public synchronized List<TreeNode<StackStatElement>> computeGroupedStacksForRequestIdAndRequestIndex(final String requestId, final int requestIndex) {
-		final RequestTimes requestTimes = requestsById.get(requestId);
-		final RequestEventLog requestEventLog = requestTimes.getSlowRequests().get(requestIndex);
+		final RequestEventLog requestEventLog = getRequestEventLogForRequestIdAndRequestIndex(requestId, requestIndex);
 		TreeNode<StackStatElement> groupedStacksRoot = groupedStacksRootsByRequestEventLog.get(requestEventLog);
 		if (groupedStacksRoot == null) {
 			groupedStacksRoot = new TreeNode<StackStatElement>(null, null);
@@ -228,6 +227,10 @@ public class RequestsTimesAndStacks implements Serializable {
 			computeGroupedStacksForRequest(requestEventLog, groupedStacksRoot);
 		}
 		return groupedStacksRoot.getChildren();
+	}
+
+	public RequestEventLog getRequestEventLogForRequestIdAndRequestIndex(final String requestId, final int requestIndex) {
+		return requestsById.get(requestId).getSlowRequests().get(requestIndex);
 	}
 
 	public List<RequestTimes> createSortedRequestByDescendantMeanList() {
