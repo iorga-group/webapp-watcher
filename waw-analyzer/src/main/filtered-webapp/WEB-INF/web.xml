@@ -62,7 +62,7 @@
 		<servlet-class>com.iorga.iraj.servlet.AgglomeratorServlet</servlet-class>
 		<init-param>
 			<param-name>mode</param-name>
-			<param-value>development</param-value>
+			<param-value>${waw-analyzer.AgglomeratorServlet.mode}</param-value>
 		</init-param>
 	</servlet>
 	<servlet-mapping>

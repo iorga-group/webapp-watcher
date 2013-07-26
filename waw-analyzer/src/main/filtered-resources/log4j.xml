@@ -3,11 +3,11 @@
 
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
 	<appender name="ConsoleAppender" class="org.apache.log4j.ConsoleAppender">
-		<param name="threshold" value="DEBUG" />
+		<param name="threshold" value="${waw-analyzer.log.threshold}" />
 		<layout class="org.apache.log4j.SimpleLayout" />
 	</appender>
 	<logger name="com.iorga">
-		<level value="DEBUG" />
+		<level value="${waw-analyzer.log.com.iorga.level}" />
 	</logger>
 	<root>
 		<priority value="INFO" />

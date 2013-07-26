@@ -50,9 +50,11 @@ cp -r * .git* $NEW_RELEASE_DIR/src/
 # Build de la distribution
 cd webappwatcher-parent
 mvn package
+
 # Build de waw-analyzer
 cd ../waw-analyzer-parent
-mvn package "-Dwaw-analyzer.tag=$TAG"
+mvn package "-Dwaw-analyzer.tag=$TAG" -Denv=prod
+
 # Copie des fichiers générés
 cd ..
 cp waw-analyzer/target/waw-analyzer-*.war $NEW_RELEASE_DIR/

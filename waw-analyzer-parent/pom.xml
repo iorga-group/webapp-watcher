@@ -12,7 +12,11 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.7</java.version>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+		
 		<waw-analyzer.build.timestamp>${maven.build.timestamp}</waw-analyzer.build.timestamp>
+		<waw-analyzer.log.threshold>DEBUG</waw-analyzer.log.threshold>
+		<waw-analyzer.log.com.iorga.level>DEBUG</waw-analyzer.log.com.iorga.level>
+		<waw-analyzer.AgglomeratorServlet.mode>development</waw-analyzer.AgglomeratorServlet.mode>
 
 		<!-- artifact versions -->
 		<version.webappwatcher>1.5.1-SNAPSHOT</version.webappwatcher>
@@ -23,6 +27,23 @@
 
 		<!-- Project properties -->
 	</properties>
+
+	<profiles>
+		<profile>
+			<id>env-prod</id>
+			<activation>
+				<property>
+					<name>env</name>
+					<value>prod</value>
+				</property>
+			</activation>
+			<properties>
+				<waw-analyzer.log.threshold>INFO</waw-analyzer.log.threshold>
+				<waw-analyzer.log.com.iorga.level>INFO</waw-analyzer.log.com.iorga.level>
+				<waw-analyzer.AgglomeratorServlet.mode>production</waw-analyzer.AgglomeratorServlet.mode>
+			</properties>
+		</profile>
+	</profiles>
 
 	<modules>
 		<module>../webappwatcher-parent</module>

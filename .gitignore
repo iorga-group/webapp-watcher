@@ -7,3 +7,5 @@ test-output
 *.jsfdia
 *~
 waw-analyzer/src/main/resources/maven.properties
+waw-analyzer/src/main/resources/log4j.xml
+waw-analyzer/src/main/webapp/WEB-INF/web.xml
