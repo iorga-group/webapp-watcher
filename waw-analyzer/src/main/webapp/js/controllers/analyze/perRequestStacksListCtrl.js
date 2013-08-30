@@ -1,4 +1,4 @@
-function PerRequestStacksListCtrl($http, $scope, irajTableService, irajBreadcrumbsService, $routeParams) {
+function PerRequestStacksListCtrl($http, $scope, irajTableService, irajBreadcrumbsService, $routeParams, requestUtilsService) {
 	/// Action methods ///
 	/////////////////////
 	$scope.goToGroupedStacks = function(request) {
@@ -6,13 +6,8 @@ function PerRequestStacksListCtrl($http, $scope, irajTableService, irajBreadcrum
 	}
 	
 	$scope.displayDetails = function(request) {
-		$http.get('api/analyze/perRequestStacksList/requestDetails/'+$scope.requestId+'/'+request.index).success(function(data) {
-			var requestDetails = data,
-				dateFormat = 'ddd, L HH:mm:ss';
-			requestDetails.startDateDisplay = moment(requestDetails.startDate).format(dateFormat);
-			requestDetails.endDateDisplay = moment(requestDetails.endDate).format(dateFormat);
-			$scope.requestDetails = requestDetails;
-			$('#requestDetailsModal').modal('show');
+		$http.get('api/analyze/perRequestStacksList/requestDetails/'+$scope.requestId+'/'+request.index).success(function(requestDetails) {
+			requestUtilsService.showRequestDetailsModal(requestDetails, $scope);
 		});
 	}
 	
@@ -20,7 +15,7 @@ function PerRequestStacksListCtrl($http, $scope, irajTableService, irajBreadcrum
 	/////////////////////
 	irajBreadcrumbsService.setLastLabel('Per request stacks list');
 	
-	irajTableService.initTable('tableParams', 'slowRequests', 'orderedSlowRequests', $scope);
+	irajTableService.initTable('tableParams', 'slowRequests', 'orderedRequests', $scope);
 	
 	if (irajBreadcrumbsService.shouldLoadFromLastScope()) {
 		var lastScope = irajBreadcrumbsService.getLast().scope;
@@ -36,13 +31,9 @@ function PerRequestStacksListCtrl($http, $scope, irajTableService, irajBreadcrum
 				$scope.requestUrl = data.url;
 				$scope.requestId = data.id;
 				var slowRequests = data.slowRequests;
-				// Add the index
-				for (var i = 0 ; i < data.slowRequests.length ; i++) {
-					var slowRequest = slowRequests[i];
-					slowRequest.index = i;
-					slowRequest.startDateDisplay = moment(slowRequest.startDate).format('llll');
-					slowRequest.endDateDisplay = moment(slowRequest.endDate).format('llll');
-				}
+				
+				requestUtilsService.formatRequestList(slowRequests);
+				
 				$scope.slowRequests = slowRequests;
 			});
 	}

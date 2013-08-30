@@ -1,0 +1,71 @@
+<div class="page-header">
+	<h1>All requests list</h1>
+</div>
+
+<p>
+	<button type="button" class="btn" bs-popover="'filterForm.html'" data-placement="bottom">Filter out the requests <b class="caret"></b></button>
+</p>
+
+<script type="text/ng-template" id="filterForm.html">
+	<form ng-submit="doFilter();">
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" ng-model="filter.onlyActions"> Only actions
+				</label>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="principal">Principal: </label>
+			<div class="controls">
+				<select name="principal" ng-model="filter.principal" ng-options="principal for principal in principals"/>
+			</div>
+		</div>
+		<div class="control-group">
+			<div class="controls">
+				<button type="submit" class="btn">Filter !</button>
+			</div>
+		</div>
+	<!-- 
+		<div class="control-group">
+			<label class="control-label" for="start-hours">Starting date: </label>
+			<div class="controls">
+				<input id="start-date" type="text" ng-model="filter.minDateTime" bs-datepicker>
+				<input type="text" ng-model="filter.minDateTime" bs-datepicker>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label" for="end-hours">Ending time: </label>
+			<div class="controls">
+				<input id="end-hours" type="text" ng-model="filter.max.hours" class="input-mini">h
+				<input type="text" ng-model="filter.max.minutes" class="input-mini">m
+				<input type="text" ng-model="filter.max.seconds" class="input-mini">s
+			</div>
+		</div>
+		 -->
+	</form>
+</script>
+
+<table ng-table="tableParams" class="table table-bordered table-condensed table-hover table-striped">
+	<tr ng-repeat="request in orderedRequests">
+		<td title="Actions">
+			<div class="dropdown">
+				<button type="button" data-toggle="dropdown" class="btn btn-primary btn-block">Actions<b class="caret" /></button>
+				<ul class="dropdown-menu" role="menu">
+					<li><a href="" ng-click="displayDetails(request)">Display details</a></li>
+					<!-- 
+					<li><a href="" ng-click="goToGroupedStacks(request)">Stacks grouped</a></li>
+					 -->
+				</ul>
+			</div>
+		</td>
+		<td title="Principal" sortable="principal">{{request.principal}}</td>
+		<td title="URL" sortable="url">{{request.url}}</td>
+		<td title="Duration" sortable="duration">{{request.duration}}</td>
+		<td title="Nb Stacks" sortable="nbStacks">{{request.nbStacks}}</td>
+		<td title="Start Date" sortable="startDate">{{request.startDateDisplay}}</td>
+		<td title="End Date" sortable="endDate">{{request.endDateDisplay}}</td>
+	</tr>
+</table>
+
+<div ng-include="'templates/includes/requestDetailsModal.html'" />

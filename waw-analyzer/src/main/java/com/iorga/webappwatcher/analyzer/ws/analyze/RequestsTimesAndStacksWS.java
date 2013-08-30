@@ -6,7 +6,6 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.core.StreamingOutput;
 
 import com.iorga.iraj.annotation.ContextParam;
@@ -43,9 +42,9 @@ public class RequestsTimesAndStacksWS {
 		}
 	}
 	@GET
-	@Path("/compute/{minMillisToLog}")
-	public StreamingOutput compute(@PathParam("minMillisToLog") final int minMillisToLog) throws IOException, ClassNotFoundException {
-		requestsTimesAndStacks.compute(minMillisToLog);
+	@Path("/compute")
+	public StreamingOutput compute() throws IOException, ClassNotFoundException {
+		requestsTimesAndStacks.compute();
 
 		final List<RequestTimes> requests = requestsTimesAndStacks.createSortedRequestByDescendantMeanList();
 

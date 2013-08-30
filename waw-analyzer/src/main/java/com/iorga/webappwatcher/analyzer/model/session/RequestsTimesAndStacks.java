@@ -35,6 +35,8 @@ public class RequestsTimesAndStacks implements Serializable {
 	/// Dependencies ///
 	@Inject
 	private UploadedFiles uploadedFiles;
+	@Inject
+	private Configurations configurations;
 
 	/// Parameters ///
 	private int minMillisToLog;
@@ -47,6 +49,29 @@ public class RequestsTimesAndStacks implements Serializable {
 	private final ListMultimap<RequestEventLog, SystemEventLog> slowRequestSystemLogs = newListMultimap();
 	private final Map<String, TreeNode<StackStatElement>> groupedStacksRootsById = Maps.newHashMap();
 	private final Map<RequestEventLog, TreeNode<StackStatElement>> groupedStacksRootsByRequestEventLog = Maps.newHashMap();
+	private final List<RequestContainer> allRequests = Lists.newArrayList();
+
+	public class RequestContainer implements Serializable {
+		private static final long serialVersionUID = 1L;
+
+		private final RequestEventLog requestEventLog;
+		private final String url;
+
+		public RequestContainer(final RequestEventLog requestEventLog, final String url) {
+			this.requestEventLog = requestEventLog;
+			this.url = url;
+		}
+
+		public RequestEventLog getRequestEventLog() {
+			return requestEventLog;
+		}
+		public String getUrl() {
+			return url;
+		}
+		public List<SystemEventLog> getSystemEventLogList() {
+			return slowRequestSystemLogs.get(requestEventLog);
+		}
+	}
 
 	public static class RequestTimes implements Serializable {
 		private static final long serialVersionUID = 1L;
@@ -135,9 +160,16 @@ public class RequestsTimesAndStacks implements Serializable {
 
 	/// Actions ///
 	//////////////
+	public List<RequestContainer> computeRequestContainers() throws ClassNotFoundException, IOException {
+		compute();
+		return allRequests;
+	}
 
-	public synchronized void compute(final int minMillisToLog) throws IOException, ClassNotFoundException {
-		if (this.minMillisToLog != minMillisToLog || !computed) {
+	public synchronized void compute() throws IOException, ClassNotFoundException {
+		if (this.minMillisToLog != configurations.getMinMillisToLog() || !computed) {
+			this.minMillisToLog = configurations.getMinMillisToLog();
+
+			final List<RequestContainer> currentAllRequests = Lists.newLinkedList(); // create first a linked list, and then convert it to array list in order to access nth element in O(1)
 
 			uploadedFiles.readFiles(new FileMetadataReader() {
 				final List<RequestEventLog> currentSlowRequests = Lists.newLinkedList();
@@ -147,23 +179,15 @@ public class RequestsTimesAndStacks implements Serializable {
 					if (eventLog instanceof RequestEventLog) {
 						final RequestEventLog request = (RequestEventLog) eventLog;
 
+						// Compute the request key
+						final String requestKey = computeRequestKey(request);
+
+						// log it by principal
+						currentAllRequests.add(new RequestContainer(request, requestKey));
+
 						final Long durationMillis = request.getDurationMillis();
 						if (durationMillis != null) {
-							// Compute the request key
-							final StringBuilder requestKeyBuilder = new StringBuilder();
-							requestKeyBuilder.append(request.getMethod()).append(":").append(request.getRequestURI());
-							// Put the parameters in a Map in order to check values easily
-							final Map<String, String[]> parameters = Maps.newHashMap();
-							for (final Parameter parameter : request.getParameters()) {
-								parameters.put(parameter.getName(), parameter.getValues());
-							}
-							// Now check if it's an AJAX request, retrieve the source /!\ Specific JSF
-							if (parameters.containsKey("AJAX:EVENTS_COUNT")) {
-								// It's an ajax request, let's add the source to the key
-								requestKeyBuilder.append("?ajax.source=").append(parameters.get("javax.faces.source")[0]);
-							}
 
-							final String requestKey = requestKeyBuilder.toString();
 							// now add the requestKey and its duration
 							RequestTimes requestTimes = requestsByUrl.get(requestKey);
 							if (requestTimes == null) {
@@ -198,8 +222,7 @@ public class RequestsTimesAndStacks implements Serializable {
 					}
 				}
 			});
-
-			this.minMillisToLog = minMillisToLog;
+			this.allRequests.addAll(currentAllRequests); // convert it to array list in order to access nth element in O(1)
 			this.computed = true;
 		}
 	}
@@ -262,6 +285,23 @@ public class RequestsTimesAndStacks implements Serializable {
 		return Multimaps.newListMultimap(Maps.<K, Collection<V>>newHashMap(), new GenericListSupplier<V>());
 	}
 
+	private static String computeRequestKey(final RequestEventLog request) {
+		final StringBuilder requestKeyBuilder = new StringBuilder();
+		requestKeyBuilder.append(request.getMethod()).append(":").append(request.getRequestURI());
+		// Put the parameters in a Map in order to check values easily
+		final Map<String, String[]> parameters = Maps.newHashMap();
+		for (final Parameter parameter : request.getParameters()) {
+			parameters.put(parameter.getName(), parameter.getValues());
+		}
+		// Now check if it's an AJAX request, retrieve the source /!\ Specific JSF
+		if (parameters.containsKey("AJAX:EVENTS_COUNT")) {
+			// It's an ajax request, let's add the source to the key
+			requestKeyBuilder.append("?ajax.source=").append(parameters.get("javax.faces.source")[0]);
+		}
+
+		return requestKeyBuilder.toString();
+	}
+
 	private void computeGroupedStacksForRequest(final RequestEventLog request, final TreeNode<StackStatElement> groupedStacksRoot) {
 		// retrieve all system logs for that request if any
 		final List<SystemEventLog> systems = slowRequestSystemLogs.get(request);
@@ -316,5 +356,6 @@ public class RequestsTimesAndStacks implements Serializable {
 		slowRequestSystemLogs.clear();
 		groupedStacksRootsById.clear();
 		groupedStacksRootsByRequestEventLog.clear();
+		allRequests.clear();
 	}
 }

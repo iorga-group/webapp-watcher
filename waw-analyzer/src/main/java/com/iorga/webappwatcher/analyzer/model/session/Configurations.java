@@ -14,11 +14,18 @@ public class Configurations implements Serializable {
 
 	private long timeSliceDurationMillis = 10 * 60 * 1000;
 
+	private int minMillisToLog = 3000;
+
 	public long getTimeSliceDurationMillis() {
 		return timeSliceDurationMillis;
 	}
-
 	public void setTimeSliceDurationMillis(final long timeSliceDurationMillis) {
 		this.timeSliceDurationMillis = timeSliceDurationMillis;
+	}
+	public int getMinMillisToLog() {
+		return minMillisToLog;
+	}
+	public void setMinMillisToLog(final int minMillisToLog) {
+		this.minMillisToLog = minMillisToLog;
 	}
 }

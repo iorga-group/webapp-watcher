@@ -13,15 +13,12 @@ import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
 
 import com.google.common.collect.Lists;
-import com.iorga.iraj.annotation.ContextParam;
-import com.iorga.iraj.annotation.ContextPath;
 import com.iorga.iraj.json.JsonWriter;
 import com.iorga.webappwatcher.analyzer.model.session.RequestsTimesAndStacks;
 import com.iorga.webappwatcher.analyzer.model.session.RequestsTimesAndStacks.RequestTimes;
 import com.iorga.webappwatcher.analyzer.ws.analyze.PerRequestStacksListWS.PerRequestStacksListTemplate.RequestTemplate;
+import com.iorga.webappwatcher.analyzer.ws.template.RequestDetailsTemplate;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
-import com.iorga.webappwatcher.eventlog.RequestEventLog.Header;
-import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
 
 @Path("/analyze/perRequestStacksList")
 public class PerRequestStacksListWS {
@@ -79,21 +76,6 @@ public class PerRequestStacksListWS {
 		return perRequestStacksListTemplate;
 	}
 
-	@ContextParam(RequestEventLog.class)
-	public static class RequestDetailsTemplate {
-		String method;
-		String requestURI;
-		String principal;
-		Parameter[] parameters;
-		Header[] headers;
-		@ContextPath("date")
-		Date startDate;
-		@ContextPath("afterProcessedDate")
-		Date endDate;
-		Long durationMillis;
-		boolean completed;
-		String throwableStackTraceAsString;
-	}
 	@GET
 	@Path("/requestDetails/{requestId}/{requestIndex}")
 	public StreamingOutput requestDetails(@PathParam("requestId") final String requestId, @PathParam("requestIndex") final int requestIndex) {

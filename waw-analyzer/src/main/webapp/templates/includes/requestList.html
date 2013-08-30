@@ -1,0 +1,50 @@
+<table ng-table="$parent.tableParams" class="table table-bordered table-condensed table-hover table-striped">
+	<tr ng-repeat="request in orderedRequests">
+		<td title="Actions">
+			<div class="dropdown">
+				<button type="button" data-toggle="dropdown" class="btn btn-primary btn-block">Actions<b class="caret" /></button>
+				<ul class="dropdown-menu" role="menu">
+					<li><a href="" ng-click="displayDetails(request)">Display details</a></li>
+					<li><a href="" ng-click="goToGroupedStacks(request)">Stacks grouped</a></li>
+				</ul>
+			</div>
+		</td>
+		<td title="Principal" sortable="principal">{{request.principal}}</td>
+		<td title="URL" ng-hide="$parent.requestUrl" sortable="url">{{request.url}}</td>
+		<td title="Duration" sortable="duration">{{request.duration}}</td>
+		<td title="Nb Stacks" sortable="nbStacks">{{request.nbStacks}}</td>
+		<td title="Start Date" sortable="startDate">{{request.startDateDisplay}}</td>
+		<td title="End Date" sortable="endDate">{{request.endDateDisplay}}</td>
+	</tr>
+</table>
+<div id="requestDetailsModal" class="modal hide fade">
+	<div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+		<h3>Request details</h3>
+	</div>
+	<div class="modal-body">
+		<ul>
+			<li>Method : {{requestDetails.method}}</li>
+			<li>URI : {{requestDetails.requestURI}}</li>
+			<li>Parameters :
+				<ul>
+					<li ng-repeat="parameter in requestDetails.parameters">
+						{{parameter.name}} : <span ng-repeat="value in parameter.values"><span ng-show="!$first">, </span>{{value}}</span>
+					</li>
+				</ul>
+			</li>
+			<li>Headers :
+				<ul>
+					<li ng-repeat="header in requestDetails.headers">{{header.name}} : {{header.value}}</li>
+				</ul>
+			</li>
+			<li>Principal : {{requestDetails.principal}}</li>
+			<li>Duration : {{requestDetails.startDateDisplay}} - {{requestDetails.endDateDisplay}} ({{requestDetails.durationMillis}} ms)</li>
+			<li ng-hide="requestDetails.completed" class="text-error"><strong>Request not completed !</strong></li>
+			<li ng-show="requestDetails.throwableStackTraceAsString">Error StackTrace : <pre>{{requestDetails.throwableStackTraceAsString}}</pre></li>
+		</ul>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn" data-dismiss="modal">Close</button>
+	</div>
+</div>

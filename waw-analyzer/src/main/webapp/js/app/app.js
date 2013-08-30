@@ -8,6 +8,7 @@ var module = angular.module('waw-analyzer', [
 		'blueimp.fileupload',
 		'flotutils-service',
 		'graphutils-service',
+		'requestutils-service',
 		'requestsGraphPerDayPlot'])
 	.config(router)
 ;

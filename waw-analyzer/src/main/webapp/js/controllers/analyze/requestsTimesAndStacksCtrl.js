@@ -1,14 +1,6 @@
 function RequestsTimesAndStacksCtrl($http, $scope, irajTableService, irajBreadcrumbsService) {
 	/// Action methods ///
 	/////////////////////
-	$scope.compute = function () {
-		$http.get('api/analyze/requestsTimesAndStacks/compute/3000', {irajClearAllMessages: true})
-			.success(function(data, status, headers, config) {
-				$scope.requests = data;
-			})
-		;
-	}
-	
 	$scope.goToGroupedStacks = function(request) {
 		irajBreadcrumbsService.changePathAndPush($scope, '/analyze/groupedStacks/'+request.id);
 	}
@@ -27,5 +19,11 @@ function RequestsTimesAndStacksCtrl($http, $scope, irajTableService, irajBreadcr
 		var lastScope = irajBreadcrumbsService.getLast().scope;
 		$scope.tableParams = lastScope.tableParams;
 		$scope.requests = lastScope.requests;
+	} else {
+		$http.get('api/analyze/requestsTimesAndStacks/compute', {irajClearAllMessages: true})
+			.success(function(data, status, headers, config) {
+				$scope.requests = data;
+			})
+		;
 	}
 }
