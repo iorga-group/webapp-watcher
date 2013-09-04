@@ -6,6 +6,36 @@
 	<name>Iorga Webapp Watcher Analyzer - Parent</name>
 	<packaging>pom</packaging>
 
+	<url>https://github.com/iorga-group/webapp-watcher.git</url>
+	<description>Webapp Watcher (WAW) is a Java EE Filter which alows you to log the requests response times and Java stack traces of a Java EE web application (.war). You can later compute usage statistics of the web application, and also track down potential bugs with the tool "waw-analyzer"</description>
+	<licenses>
+		<license>
+			<name>GNU Lesser General Public License, LGPL v3</name>
+			<url>http://www.gnu.org/licenses/lgpl.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
+
+	<scm>
+		<url>https://github.com/iorga-group/webapp-watcher.git</url>
+		<connection>scm:git:git://github.com/iorga-group/webapp-watcher.git</connection>
+		<developerConnection>scm:git:git@github.com:iorga-group/webapp-watcher.git</developerConnection>
+	</scm>
+	
+	<developers>
+		<developer>
+			<name>Anthony OGIER</name>
+			<email>aogier@iorga.com</email>
+			<organization>Iorga Group</organization>
+			<organizationUrl>http://www.iorga.com/</organizationUrl>
+		</developer>
+	</developers>
 
 	<properties>
 		<!-- Project globals -->
@@ -112,49 +142,6 @@ encoding/<project>=UTF-8]]>
 			</plugins>
 		</pluginManagement>
 	</build>
-
-	<repositories>
-		<repository>
-			<id>jboss-public-repository-group</id>
-			<name>JBoss Public Maven Repository Group</name>
-			<url>http://repository.jboss.org/nexus/content/groups/public</url>
-			<releases>
-				<enabled>true</enabled>
-				<updatePolicy>never</updatePolicy>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-				<updatePolicy>never</updatePolicy>
-			</snapshots>
-		</repository>
-	</repositories>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>jboss-public-repository-group</id>
-			<name>JBoss Public Maven Repository Group</name>
-			<url>http://repository.jboss.org/nexus/content/groups/public</url>
-			<releases>
-				<enabled>true</enabled>
-				<updatePolicy>never</updatePolicy>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-				<updatePolicy>never</updatePolicy>
-			</snapshots>
-		</pluginRepository>
-		<pluginRepository>
-			<id>codehaus</id>
-			<url>http://repository.codehaus.org/</url>
-		</pluginRepository>
-	</pluginRepositories>
-
-	<scm>
-		<connection>scm:git:file://../</connection>
-		<developerConnection>scm:git:file://../</developerConnection>
-		<url>scm:git:file://../</url>
-	</scm>
-
-
 
 	<dependencyManagement>
 		<dependencies>
