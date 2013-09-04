@@ -3,13 +3,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>webappwatcher</artifactId>
-	<version>1.5.1-SNAPSHOT</version>
 	<name>Iorga Webapp Watcher</name>
 	<packaging>jar</packaging>
 	<parent>
 		<groupId>com.iorga</groupId>
 		<artifactId>webappwatcher-parent</artifactId>
-		<version>1.5.1-SNAPSHOT</version>
+		<version>1.5.2</version>
 		<relativePath>../webappwatcher-parent/pom.xml</relativePath>
 	</parent>
 

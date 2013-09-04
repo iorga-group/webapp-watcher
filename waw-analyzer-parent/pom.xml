@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.iorga</groupId>
 	<artifactId>waw-analyzer-parent</artifactId>
-	<version>1.2.0-SNAPSHOT</version>
+	<version>1.2.1</version>
 	<name>Iorga Webapp Watcher Analyzer - Parent</name>
 	<packaging>pom</packaging>
 
@@ -49,8 +49,8 @@
 		<waw-analyzer.AgglomeratorServlet.mode>development</waw-analyzer.AgglomeratorServlet.mode>
 
 		<!-- artifact versions -->
-		<version.webappwatcher>1.5.1-SNAPSHOT</version.webappwatcher>
-		<version.iraj>0.0.1-SNAPSHOT</version.iraj>
+		<version.webappwatcher>1.5.2</version.webappwatcher>
+		<version.iraj>1.0.0</version.iraj>
 		<version.resteasy>2.3.6.Final</version.resteasy>
 		<version.commons-fileupload>1.2.2</version.commons-fileupload>
 		<version.commons-math3>3.1.1</version.commons-math3>
