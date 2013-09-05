@@ -1,16 +1,27 @@
 # Description
-Webapp Watcher (WAW) is a Java EE Filter which enables to log the requests response times and Java stack traces of a Java EE web application (.war). One can later compute usage statistics of the web application, and also track down potential bugs with the tool "waw-analyzer".
+Webapp Watcher (WAW) is a Java EE Filter which alows you to log the requests response times and Java stack traces of a Java EE web application (.war). You can later compute usage statistics of the web application, and also track down potential bugs with the tool "waw-analyzer".
 
 # WAW
-## Manual Installation
-To install `waw` in your `webapp.war`, follow these steps:
-
+## Installation
+To install WAW in your `webapp.war`, you must add the `webappwatcher-*.jar` and its dependencies to the libs of your webapp.
+### Manually
 1. Put `webappwatcher-*.jar` in the `WEB-INF/lib/` directory of your webapp;
 
 1. Also add in `WEB-INF/lib` the jar dependencies from the `lib/` directory of the WAW distribution (be careful not to add jars which would already be present in your webapp);
 
 1. Also add the jars in `optional-jar` (`log4j*` & `slf4j*`) if your application server don't provide them;
 
+### With Maven
+Add this dependency to your project :
+```xml
+	<dependency>
+		<groupId>com.iorga</groupId>
+		<artifactId>webappwatcher</artifactId>
+		<version>1.5.2</version>
+		<scope>runtime</scope>
+	</dependency>
+```
+## Integration
 1. Be sure that you've got a filter which allows [HttpServletRequest.getUserPrincipal()](http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getUserPrincipal(\)) to return the current logged in user (used by WAW filter);
 
 1. Add this in your `WEB-INF/web.xml` (just after the filter we talked in the previous point):
@@ -41,8 +52,6 @@ With JBoss 7, you also have to add `com/sun/management` to `jboss-as-7/modules/s
                 <path name="com/sun/script/javascript"/>
 ...
 ```
-## Maven Installation
-_TODO_
 ## Configuration
 _TODO_
 ## _Log Filter_ commands
