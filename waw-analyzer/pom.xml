@@ -9,7 +9,7 @@
 	<parent>
 		<groupId>com.iorga</groupId>
 		<artifactId>waw-analyzer-parent</artifactId>
-		<version>1.2.1</version>
+		<version>1.2.2-SNAPSHOT</version>
 		<relativePath>../waw-analyzer-parent/pom.xml</relativePath>
 	</parent>
 
