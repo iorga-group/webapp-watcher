@@ -42,7 +42,7 @@ angular.module('requestutils-service', [])
 				if (request.startDate > maxTime) maxTime = request.startDate;
 				// and format the times
 				request.startDateDisplay = moment(request.startDate).format('llll');
-				request.endDateDisplay = moment(request.endDate).format('llll');
+				request.endDateDisplay = request.endDate ? moment(request.endDate).format('llll') : null;
 				// store the principal
 				principals[request.principal] = true;
 			}
