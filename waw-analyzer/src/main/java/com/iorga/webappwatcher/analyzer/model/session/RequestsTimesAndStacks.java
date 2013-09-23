@@ -38,9 +38,9 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FileMetadataReader;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FilesChanged;
+import com.iorga.webappwatcher.analyzer.util.RequestActionKeyComputer;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
-import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
 import com.iorga.webappwatcher.eventlog.SystemEventLog;
 import com.iorga.webappwatcher.eventlog.SystemEventLog.Thread;
 
@@ -186,6 +186,7 @@ public class RequestsTimesAndStacks implements Serializable {
 			this.minMillisToLog = configurations.getMinMillisToLog();
 
 			final List<RequestContainer> currentAllRequests = Lists.newLinkedList(); // create first a linked list, and then convert it to array list in order to access nth element in O(1)
+			final RequestActionKeyComputer requestActionKeyComputer = configurations.getRequestActionKeyComputer();
 
 			uploadedFiles.readFiles(new FileMetadataReader() {
 				final List<RequestEventLog> currentSlowRequests = Lists.newLinkedList();
@@ -196,7 +197,7 @@ public class RequestsTimesAndStacks implements Serializable {
 						final RequestEventLog request = (RequestEventLog) eventLog;
 
 						// Compute the request key
-						final String requestKey = computeRequestKey(request);
+						final String requestKey = requestActionKeyComputer.computeRequestKey(request);
 
 						// log it by principal
 						currentAllRequests.add(new RequestContainer(request, requestKey));
@@ -299,23 +300,6 @@ public class RequestsTimesAndStacks implements Serializable {
 	////////////
 	private static <K, V> ListMultimap<K, V> newListMultimap() {
 		return Multimaps.newListMultimap(Maps.<K, Collection<V>>newHashMap(), new GenericListSupplier<V>());
-	}
-
-	private static String computeRequestKey(final RequestEventLog request) {
-		final StringBuilder requestKeyBuilder = new StringBuilder();
-		requestKeyBuilder.append(request.getMethod()).append(":").append(request.getRequestURI());
-		// Put the parameters in a Map in order to check values easily
-		final Map<String, String[]> parameters = Maps.newHashMap();
-		for (final Parameter parameter : request.getParameters()) {
-			parameters.put(parameter.getName(), parameter.getValues());
-		}
-		// Now check if it's an AJAX request, retrieve the source /!\ Specific JSF
-		if (parameters.containsKey("AJAX:EVENTS_COUNT")) {
-			// It's an ajax request, let's add the source to the key
-			requestKeyBuilder.append("?ajax.source=").append(parameters.get("javax.faces.source")[0]);
-		}
-
-		return requestKeyBuilder.toString();
 	}
 
 	private void computeGroupedStacksForRequest(final RequestEventLog request, final TreeNode<StackStatElement> groupedStacksRoot) {

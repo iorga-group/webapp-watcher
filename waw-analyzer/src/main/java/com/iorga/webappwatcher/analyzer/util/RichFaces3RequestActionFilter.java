@@ -16,21 +16,13 @@
  */
 package com.iorga.webappwatcher.analyzer.util;
 
-import java.io.Serializable;
-
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
 
-public class JSF21AndRichFaces4RequestActionFilter implements RequestActionFilter, Serializable {
+public class RichFaces3RequestActionFilter extends JSF21AndRichFaces4RequestActionFilter implements RequestActionFilter {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public boolean isAnActionRequest(final RequestEventLog requestEventLog) {
-		final String requestURI = requestEventLog.getRequestURI();
-		return !requestURI.contains("/javax.faces.resource/") && !requestURI.contains("/rfRes/")
-			&& (requestEventLog.getMethod().equals("GET") || isNotAnAjaxPostOrIsNotAPollerRequest(requestEventLog));
-	}
-
 	protected boolean isNotAnAjaxPostOrIsNotAPollerRequest(final RequestEventLog requestEventLog) {
 		String javaxSource = null;
 		boolean ajaxEvent = false;
@@ -38,7 +30,7 @@ public class JSF21AndRichFaces4RequestActionFilter implements RequestActionFilte
 			final String parameterName = parameter.getName();
 			if (parameterName.equals("AJAX:EVENTS_COUNT")) {
 				ajaxEvent = true;
-			} else if (parameterName.equals("javax.faces.source")) {
+			} else if (parameterName.equals("ajaxSingle")) {
 				javaxSource = parameter.getValues()[0];
 			}
 		}

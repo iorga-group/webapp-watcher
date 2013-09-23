@@ -40,7 +40,6 @@ import com.google.common.collect.Maps;
 import com.iorga.webappwatcher.analyzer.model.session.DurationPerPrincipalStats.TimeSlice.StatsPerPrincipal;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FileMetadataReader;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FilesChanged;
-import com.iorga.webappwatcher.analyzer.util.JSF21AndRichFaces4RequestActionFilter;
 import com.iorga.webappwatcher.analyzer.util.RequestActionFilter;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
@@ -175,8 +174,6 @@ public class DurationPerPrincipalStats implements Serializable {
 	private boolean computed;
 	private long timeSliceDurationMillis = -1;
 
-	private final RequestActionFilter requestActionFilter = new JSF21AndRichFaces4RequestActionFilter();
-
 	/// Actions ///
 	//////////////
 	public List<DayStatistic> computeDayStatistics() throws ClassNotFoundException, IOException {
@@ -237,6 +234,7 @@ public class DurationPerPrincipalStats implements Serializable {
 
 	private synchronized void compute(final long timeSliceDurationMillis) throws ClassNotFoundException, IOException {
 		if (!computed || this.timeSliceDurationMillis != timeSliceDurationMillis) {
+			final RequestActionFilter requestActionFilter = configurations.getRequestActionFilter();
 
 			uploadedFiles.readFiles(new FileMetadataReader() {
 				@Override

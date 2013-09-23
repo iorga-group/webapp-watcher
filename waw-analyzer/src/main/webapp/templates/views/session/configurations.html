@@ -29,6 +29,15 @@
 		</div>
 	</div>
 	<div class="control-group">
+		<label class="control-label" for="configurations-requestActionFilterType">Type of webapp which generated the log</label>
+		<div class="controls">
+			<select id="configurations-requestActionFilterType" ng-model="configurations.requestActionFilterType">
+				<option value="JSF21_AND_RICHFACES_4">JSF 2.1 & RichFaces 4</option>
+				<option value="RICHFACES_3">RichFaces 3</option>
+			</select>
+		</div>
+	</div>
+	<div class="control-group">
 		<div class="controls">
 			<button type="submit" class="btn">Save</button>
 		</div>

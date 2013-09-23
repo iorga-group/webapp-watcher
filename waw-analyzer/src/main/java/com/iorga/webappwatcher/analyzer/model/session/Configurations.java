@@ -22,15 +22,54 @@ import javax.enterprise.context.SessionScoped;
 
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
+import org.codehaus.jackson.annotate.JsonIgnore;
+
+import com.iorga.webappwatcher.analyzer.util.JSF21AndRichFaces4RequestActionFilter;
+import com.iorga.webappwatcher.analyzer.util.JSF21RequestActionKeyComputer;
+import com.iorga.webappwatcher.analyzer.util.RequestActionFilter;
+import com.iorga.webappwatcher.analyzer.util.RequestActionKeyComputer;
+import com.iorga.webappwatcher.analyzer.util.RichFaces3RequestActionFilter;
+import com.iorga.webappwatcher.analyzer.util.RichFaces3RequestActionKeyComputer;
 
 @SessionScoped
 @JsonAutoDetect(getterVisibility = Visibility.PUBLIC_ONLY)
 public class Configurations implements Serializable {
+	public enum RequestActionFilterType {
+		JSF21_AND_RICHFACES_4(new JSF21AndRichFaces4RequestActionFilter(), new JSF21RequestActionKeyComputer()),
+		RICHFACES_3(new RichFaces3RequestActionFilter(), new RichFaces3RequestActionKeyComputer());
+
+		private final RequestActionFilter requestActionFilter;
+		private final RequestActionKeyComputer requestActionKeyComputer;
+
+		RequestActionFilterType(final RequestActionFilter requestActionFilter, final RequestActionKeyComputer requestActionKeyComputer) {
+			this.requestActionFilter = requestActionFilter;
+			this.requestActionKeyComputer = requestActionKeyComputer;
+		}
+
+		public RequestActionFilter getRequestActionFilter() {
+			return requestActionFilter;
+		}
+		public RequestActionKeyComputer getRequestActionKeyComputer() {
+			return requestActionKeyComputer;
+		}
+	}
+
 	private static final long serialVersionUID = 1L;
 
 	private long timeSliceDurationMillis = 10 * 60 * 1000;
 
 	private int minMillisToLog = 3000;
+
+	private RequestActionFilterType requestActionFilterType = RequestActionFilterType.JSF21_AND_RICHFACES_4;
+
+	@JsonIgnore
+	public RequestActionFilter getRequestActionFilter() {
+		return requestActionFilterType.getRequestActionFilter();
+	}
+	@JsonIgnore
+	public RequestActionKeyComputer getRequestActionKeyComputer() {
+		return requestActionFilterType.getRequestActionKeyComputer();
+	}
 
 	public long getTimeSliceDurationMillis() {
 		return timeSliceDurationMillis;
@@ -44,4 +83,11 @@ public class Configurations implements Serializable {
 	public void setMinMillisToLog(final int minMillisToLog) {
 		this.minMillisToLog = minMillisToLog;
 	}
+	public RequestActionFilterType getRequestActionFilterType() {
+		return requestActionFilterType;
+	}
+	public void setRequestActionFilterType(final RequestActionFilterType requestActionFilterType) {
+		this.requestActionFilterType = requestActionFilterType;
+	}
+
 }
