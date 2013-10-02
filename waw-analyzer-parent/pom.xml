@@ -54,6 +54,8 @@
 		<version.resteasy>2.3.6.Final</version.resteasy>
 		<version.commons-fileupload>1.2.2</version.commons-fileupload>
 		<version.commons-math3>3.1.1</version.commons-math3>
+		<version.rhino>1.7R4</version.rhino>
+		<version.cdi-unit>2.1.1</version.cdi-unit>
 
 		<!-- Project properties -->
 	</properties>
@@ -170,6 +172,11 @@ encoding/<project>=UTF-8]]>
 				<artifactId>commons-fileupload</artifactId>
 				<version>${version.commons-fileupload}</version>
 			</dependency>
+			<dependency>
+				<groupId>org.mozilla</groupId>
+				<artifactId>rhino</artifactId>
+				<version>${version.rhino}</version>
+			</dependency>
 			<!-- Runtime -->
 			<dependency>
 				<groupId>org.jboss.resteasy</groupId>
@@ -180,6 +187,24 @@ encoding/<project>=UTF-8]]>
 			</dependency>
 			<!-- Provided -->
 			<!-- Test -->
+			<dependency>
+				<groupId>org.jglue.cdi-unit</groupId>
+				<artifactId>cdi-unit</artifactId>
+				<version>${version.cdi-unit}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.11</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-all</artifactId>
+				<version>1.9.5</version>
+				<scope>test</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 </project>

@@ -19,9 +19,9 @@ package com.iorga.webappwatcher.analyzer.ws.analyze;
 import java.io.IOException;
 
 import javax.inject.Inject;
-import javax.ws.rs.GET;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.jboss.resteasy.annotations.GZIP;
@@ -29,25 +29,18 @@ import org.jboss.resteasy.annotations.GZIP;
 import com.iorga.iraj.json.JsonWriter;
 import com.iorga.webappwatcher.analyzer.model.session.RequestsTimesAndStacks;
 import com.iorga.webappwatcher.analyzer.ws.template.RequestContainerTemplate;
-import com.iorga.webappwatcher.analyzer.ws.template.RequestDetailsTemplate;
 
-@Path("/analyze/allRequestList")
-public class AllRequestListWS {
+@Path("/analyze/requestsByQuery")
+public class RequestsByQueryWS {
 	@Inject
 	private RequestsTimesAndStacks requestsTimesAndStacks;
 	@Inject
 	private JsonWriter jsonWriter;
 
-	@GET
+	@POST
 	@GZIP
 	@Path("/compute")
-	public StreamingOutput compute() throws ClassNotFoundException, IOException {
-		return jsonWriter.writeIterableWithTemplate(RequestContainerTemplate.class, requestsTimesAndStacks.computeRequestContainers());
-	}
-
-	@GET
-	@Path("/requestDetails/{requestIndex}")
-	public StreamingOutput requestDetails(@PathParam("requestIndex") final int requestIndex) throws ClassNotFoundException, IOException {
-		return jsonWriter.writeWithTemplate(RequestDetailsTemplate.class, requestsTimesAndStacks.computeRequestContainers().get(requestIndex).getRequestEventLog());
+	public StreamingOutput compute(@FormParam("query") final String query) throws ClassNotFoundException, IOException {
+		return jsonWriter.writeIterableWithTemplate(RequestContainerTemplate.class, requestsTimesAndStacks.computeRequestContainersByQuery(query));
 	}
 }

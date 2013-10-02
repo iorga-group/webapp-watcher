@@ -23,12 +23,17 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.enterprise.context.SessionScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextFactory;
+import org.mozilla.javascript.Script;
+import org.mozilla.javascript.ScriptableObject;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ListMultimap;
@@ -36,11 +41,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FileMetadataReader;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FilesChanged;
 import com.iorga.webappwatcher.analyzer.util.RequestActionKeyComputer;
 import com.iorga.webappwatcher.eventlog.EventLog;
 import com.iorga.webappwatcher.eventlog.RequestEventLog;
+import com.iorga.webappwatcher.eventlog.RequestEventLog.Header;
+import com.iorga.webappwatcher.eventlog.RequestEventLog.Parameter;
 import com.iorga.webappwatcher.eventlog.SystemEventLog;
 import com.iorga.webappwatcher.eventlog.SystemEventLog.Thread;
 
@@ -70,14 +78,19 @@ public class RequestsTimesAndStacks implements Serializable {
 	public class RequestContainer implements Serializable {
 		private static final long serialVersionUID = 1L;
 
+		private final int requestIndex;
 		private final RequestEventLog requestEventLog;
 		private final String url;
 
-		public RequestContainer(final RequestEventLog requestEventLog, final String url) {
+		public RequestContainer(final int requestIndex, final RequestEventLog requestEventLog, final String url) {
+			this.requestIndex = requestIndex;
 			this.requestEventLog = requestEventLog;
 			this.url = url;
 		}
 
+		public int getRequestIndex() {
+			return requestIndex;
+		}
 		public RequestEventLog getRequestEventLog() {
 			return requestEventLog;
 		}
@@ -200,7 +213,7 @@ public class RequestsTimesAndStacks implements Serializable {
 						final String requestKey = requestActionKeyComputer.computeRequestKey(request);
 
 						// log it by principal
-						currentAllRequests.add(new RequestContainer(request, requestKey));
+						currentAllRequests.add(new RequestContainer(currentAllRequests.size(), request, requestKey));
 
 						final Long durationMillis = request.getDurationMillis();
 						if (durationMillis != null) {
@@ -256,6 +269,53 @@ public class RequestsTimesAndStacks implements Serializable {
 			}
 		}
 		return groupedStacksRoot.getChildren();
+	}
+
+	/**
+	 * Filters all the requests with the query. Here are the variables available to the query :<ul>
+	 * <li>headers: a <code>Set&lt;String&gt;</code> of the request headers</li>
+	 * <li>parameters: a <code>Map&lt;String, Set&lt;String&gt;&gt;</code> of the request parameters</li>
+	 * <li>request: the <code>RequestEventLog</code></li>
+	 * <li>requestContainer: the <code>RequestContainer</code></li>
+	 * </ul>
+	 * @param query
+	 * @return
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	public List<RequestContainer> computeRequestContainersByQuery(final String query) throws ClassNotFoundException, IOException {
+		final List<RequestContainer> requestContainers = computeRequestContainers();
+
+		final List<RequestContainer> filteredRequestContainers = Lists.newLinkedList();
+
+		final Context context = ContextFactory.getGlobal().enterContext();
+		context.setOptimizationLevel(9);
+
+		final ScriptableObject scope = context.initStandardObjects();
+		final Script compiledQuery = context.compileString(query, "query.js", 1, null);
+
+		for (final RequestContainer requestContainer : requestContainers) {
+			//TODO : create headers & parameters only if necessary (found in the query)
+			final Map<String, String> headers = Maps.newHashMap();
+			final RequestEventLog request = requestContainer.requestEventLog;
+			for (final Header header : request.getHeaders()) {
+				headers.put(header.getName(), header.getValue());
+			}
+			final Map<String, Set<String>> parameters = Maps.newHashMap();
+			for (final Parameter parameter : request.getParameters()) {
+				parameters.put(parameter.getName(), Sets.newHashSet(parameter.getValues()));
+			}
+			// define variables in the scope
+			scope.put("headers", scope, headers);
+			scope.put("parameters", scope, parameters);
+			scope.put("request", scope, request);
+			scope.put("requestContainer", scope, requestContainer);
+			// test if that request matches
+			if (Boolean.TRUE.equals(compiledQuery.exec(context, scope))) {
+				filteredRequestContainers.add(requestContainer);
+			}
+		}
+		return filteredRequestContainers;
 	}
 
 	public synchronized List<TreeNode<StackStatElement>> computeGroupedStacksForRequestIdAndRequestIndex(final String requestId, final int requestIndex) {

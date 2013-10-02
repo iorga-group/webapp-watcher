@@ -24,6 +24,7 @@ function router($routeProvider) {
 		.when('/analyze/groupedStacks/:requestId/:requestIndex', {controller:GroupedStacksCtrl, templateUrl: 'templates/views/analyze/groupedStacks.html'})
 		.when('/analyze/perRequestStacksList/:requestId', {controller:PerRequestStacksListCtrl, templateUrl: 'templates/views/analyze/perRequestStacksList.html'})
 		.when('/analyze/allRequestList', {controller:AllRequestListCtrl, templateUrl: 'templates/views/analyze/allRequestList.html'})
+		.when('/analyze/requestsByQuery', {controller:RequestsByQuery, templateUrl: 'templates/views/analyze/requestsByQuery.html'})
 		.when('/statistics/daily', {controller:DailyStatisticsCtrl, templateUrl: 'templates/views/statistics/dailyStatistics.html'})
 		.when('/statistics/timeSliceList', {controller:TimeSliceListCtrl, templateUrl: 'templates/views/statistics/timeSliceList.html'})
 		.when('/graphs/requestsGraph', {controller:RequestsGraphCtrl, templateUrl: 'templates/views/graphs/requestsGraph.html'})
