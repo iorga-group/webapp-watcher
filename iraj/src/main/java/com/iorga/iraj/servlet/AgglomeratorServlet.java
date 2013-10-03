@@ -16,7 +16,6 @@
  */
 package com.iorga.iraj.servlet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -245,7 +244,7 @@ public class AgglomeratorServlet extends CacheAwareServlet {
 			String prefix = "";
 			if (!src.startsWith("/")) {
 				// this is not an absolute file, let's add the prefix from the given path
-				prefix = new File(path).getParent();
+				prefix = StringUtils.substringBeforeLast(path, "/")+"/";
 				src = prefix+src;
 			}
 			// searching all scripts inside the folder defined by src attribute
