@@ -36,6 +36,9 @@ angular.module('requestutils-service', [])
 			// Add the index
 			for (var i = 0 ; i < requestList.length ; i++) {
 				var request = requestList[i];
+				if (!request.index) {
+					request.index = i;
+				}
 				// remember the min & max time
 				if (request.startDate < minTime) minTime = request.startDate;
 				if (request.startDate > maxTime) maxTime = request.startDate;
