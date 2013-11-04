@@ -303,7 +303,8 @@ public class RequestsTimesAndStacks implements Serializable {
 			}
 			final Map<String, Set<String>> parameters = Maps.newHashMap();
 			for (final Parameter parameter : request.getParameters()) {
-				parameters.put(parameter.getName(), Sets.newHashSet(parameter.getValues()));
+				final String[] values = parameter.getValues();
+				parameters.put(parameter.getName(), values != null ? Sets.newHashSet(values) : Sets.<String>newHashSet());
 			}
 			// define variables in the scope
 			scope.put("headers", scope, headers);
