@@ -14,18 +14,23 @@
  You should have received a copy of the GNU Lesser General Public License
  along with this program.  If not, see [http://www.gnu.org/licenses/].
 -->
-<table class="table table-bordered table-condensed table-hover table-striped">
+<table class="table table-condensed table-hover table-striped">
 	<tbody ng-repeat="dayStatistic in dayStatistics">
 		<!-- headers -->
-		<tr><th colspan="{{dayStatistic.statistics.length + 1}}">{{dayStatistic.dateName}}</th></tr>
-		<tr>
+		<tr class="table-bordered"><th colspan="{{dayStatistic.statistics.length + 1}}">{{dayStatistic.dateName}}</th></tr>
+		<tr class="table-bordered">
 			<th/>
 			<th ng-repeat="statistic in dayStatistic.statistics">{{statistic.type}}</th>
 		</tr>
 		<!-- datas -->
-		<tr ng-repeat="statisticRowType in statisticRowTypes">
+		<tr class="table-bordered" ng-repeat="statisticRowType in statisticRowTypes">
 			<th>{{statisticRowType}}</th>
 			<td ng-repeat="statistic in dayStatistic.statistics">{{statistic[statisticRowType]}}</td>
 		</tr>
+		<tr class="table-bordered">
+			<th>Distinct users</th>
+			<td colspan="{{dayStatistic.statistics.length}}">{{dayStatistic.distinctPrincipalsSize}}</td>
+		</tr>
+		<tr><td colspan="{{dayStatistic.statistics.length + 1}}" class="cellSpacer">&nbsp;</td></tr>
 	</tbody>
 </table>

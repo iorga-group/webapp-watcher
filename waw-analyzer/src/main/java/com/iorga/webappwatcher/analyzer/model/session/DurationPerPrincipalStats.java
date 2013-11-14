@@ -25,6 +25,7 @@ import java.lang.annotation.Target;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.enterprise.context.SessionScoped;
 import javax.enterprise.event.Event;
@@ -37,6 +38,7 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.iorga.webappwatcher.analyzer.model.session.DurationPerPrincipalStats.TimeSlice.StatsPerPrincipal;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FileMetadataReader;
 import com.iorga.webappwatcher.analyzer.model.session.UploadedFiles.FilesChanged;
@@ -121,6 +123,7 @@ public class DurationPerPrincipalStats implements Serializable {
 		private final DescriptiveStatistics durationsFor1click90c = new DescriptiveStatistics();
 		private final DescriptiveStatistics durationsFor1clickMin = new DescriptiveStatistics();
 		private final DescriptiveStatistics durationsFor1clickMax = new DescriptiveStatistics();
+		private final Set<String> principals = Sets.newHashSet();
 
 		public DayStatistic(final Date startDate) {
 			this.startDate = startDate;
@@ -155,6 +158,9 @@ public class DurationPerPrincipalStats implements Serializable {
 		}
 		public DescriptiveStatistics getDurationsFor1clickMax() {
 			return durationsFor1clickMax;
+		}
+		public Set<String> getPrincipals() {
+			return principals;
 		}
 	}
 
@@ -203,6 +209,7 @@ public class DurationPerPrincipalStats implements Serializable {
 					currentDayStatistic.durationsFor1clickMin.addValue(timeSlice.durationsFor1click.getMin());
 					currentDayStatistic.durationsFor1clickMax.addValue(timeSlice.durationsFor1click.getMax());
 				}
+				currentDayStatistic.principals.addAll(timeSlice.statsPerPrincipal.keySet());
 			}
 		}
 		return dayStatistics;

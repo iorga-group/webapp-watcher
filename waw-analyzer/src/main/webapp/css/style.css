@@ -43,3 +43,10 @@ a {
 	margin-left:auto;
 	margin-right:auto; 
 }
+
+.cellSpacer {
+	border-left-width: 0 !important;
+	border-right-width: 0 !important;
+	border-bottom-width: 0 !important;
+	background-color: inherit !important;
+}

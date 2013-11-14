@@ -58,8 +58,7 @@ public class DailyStatisticsWS {
 					OBJECT_MAPPER.writeValue(generator, dayStatistic.getStartDate());
 					generator.writeFieldName("endDate");
 					OBJECT_MAPPER.writeValue(generator, dayStatistic.getEndDate());
-					generator.writeFieldName("statistics");
-					generator.writeStartArray();
+					generator.writeArrayFieldStart("statistics");
 					// write each statistic
 					for (final String statisticType : new String[] {"distinctUsers", "numberOfRequests", "durationsFor1clickSum", "durationsFor1clickMean", "durationsFor1clickMedian", "durationsFor1click90c", "durationsFor1clickMin", "durationsFor1clickMax"}) {
 //						generator.writeFieldName(statisticType);
@@ -79,6 +78,8 @@ public class DailyStatisticsWS {
 						generator.writeEndObject();
 					}
 					generator.writeEndArray();
+					generator.writeFieldName("distinctPrincipalsSize");
+					OBJECT_MAPPER.writeValue(generator, dayStatistic.getPrincipals().size());
 					generator.writeEndObject();
 				}
 				generator.writeEndArray();
