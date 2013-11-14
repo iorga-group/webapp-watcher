@@ -28,6 +28,8 @@
 	<div class="control-group">
 		<div class="controls">
 			<button type="submit" class="btn">Go !</button>
+			<button type="button" class="btn" ng-show="orderedRequests" ng-click="downloadResultsAsCSV();">Download results as CSV</button>
+			<button type="button" class="btn" ng-show="orderedRequests" ng-click="downloadResultsAsXLSX();">Download results as XLSX</button>
 		</div>
 	</div>
 </form>
