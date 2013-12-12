@@ -53,65 +53,7 @@ public class DecompressibleObjectInputStream extends ObjectInputStream {
 			localClass = Class.forName(resultClassDescriptor.getName());
 		} catch (ClassNotFoundException e) {
 			logger.warn("No local class for " + resultClassDescriptor.getName(), e);
-//			return new DecompressibleObjectStreamClass(logger);
 			return resultClassDescriptor;
-			
-//			try {
-//				Field resolveExField = ObjectStreamClass.class.getDeclaredField("resolveEx");
-//				resolveExField.setAccessible(true);
-//				resolveExField.set(resultClassDescriptor, null);
-//			} catch (NoSuchFieldException e1) {
-//				logger.error("Problem while trying to erase ClassNotFoundException on " + resultClassDescriptor.getName(), e1);
-//			} catch (SecurityException e1) {
-//				logger.error("Problem while trying to erase ClassNotFoundException on " + resultClassDescriptor.getName(), e1);
-//			} catch (IllegalAccessException e1) {
-//				logger.error("Problem while trying to erase ClassNotFoundException on " + resultClassDescriptor.getName(), e1);
-//			}
-//			return resultClassDescriptor;
-//			ProxyFactory proxyFactory = new ProxyFactory();
-//			proxyFactory.setSuperclass(ObjectStreamClass.class);
-////			proxyFactory.setFilter(new MethodFilter() {
-////				@Override
-////				public boolean isHandled(Method method) {
-////					return "getResolveException".equals(method.getName());
-////				}
-////			});
-//			@SuppressWarnings("unchecked")
-//			Class<ObjectStreamClass> proxiedClass = proxyFactory.createClass();
-//			try {
-//				ObjectStreamClass proxiedClassDescriptor = proxiedClass.newInstance();
-//				((Proxy)proxiedClassDescriptor).setHandler(new MethodHandler() {
-//					@Override
-//					public Object invoke(Object self, Method thisMethod, Method proceed, Object[] args) throws Throwable {
-//						if ("getResolveException".equals(thisMethod.getName())) {
-//							return null;
-//						} else {
-//							return proceed.invoke(superClassDescriptor, args);
-//						}
-//					}
-//				});
-//				return proxiedClassDescriptor;
-//			} catch (InstantiationException e1) {
-//				logger.error("Problem while creating proxy for " + resultClassDescriptor.getName(), e1);
-//				return resultClassDescriptor;
-//			} catch (IllegalAccessException e1) {
-//				logger.error("Problem while creating proxy for " + resultClassDescriptor.getName(), e1);
-//				return resultClassDescriptor;
-//			}
-			
-//			return (ObjectStreamClass) Proxy.newProxyInstance(ObjectStreamClass.class.getClassLoader(),
-//                    new Class[] { ObjectStreamClass.class },
-//                    new InvocationHandler() {
-//						@Override
-//						public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-//							if ("getResolveException".equals(method.getName())) {
-//								return null;
-//							} else {
-//								return method.invoke(superClassDescriptor, args);
-//							}
-//						}
-//					});
-//			return resultClassDescriptor;
 		}
 		ObjectStreamClass localClassDescriptor = ObjectStreamClass.lookup(localClass);
 		if (localClassDescriptor != null) { // only if class implements serializable
