@@ -338,7 +338,7 @@ public class RequestsTimesAndStacks implements Serializable {
 		return Ordering.from(new Comparator<RequestTimes>() {
 			@Override
 			public int compare(final RequestTimes o1, final RequestTimes o2) {
-				return (int) (o1.statistics.getMean() - o2.statistics.getMean());
+				return new Double(o1.statistics.getMean()).compareTo(new Double(o2.statistics.getMean()));
 			}
 		}).reverse().sortedCopy(requestsByUrl.values());
 	}

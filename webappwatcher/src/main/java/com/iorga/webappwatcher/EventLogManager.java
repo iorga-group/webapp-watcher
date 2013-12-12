@@ -60,6 +60,7 @@ import com.iorga.webappwatcher.event.EventLogWillBeIgnoredUncompletedEvent;
 import com.iorga.webappwatcher.event.EventLogWillBeWrittenUncompletedEvent;
 import com.iorga.webappwatcher.event.RetentionLogWritingEvent;
 import com.iorga.webappwatcher.eventlog.EventLog;
+import com.iorga.webappwatcher.util.DecompressibleObjectInputStream;
 import com.iorga.webappwatcher.util.StartableRunnable;
 
 public class EventLogManager {
@@ -403,7 +404,7 @@ public class EventLogManager {
 			fileName = StringUtils.substringBeforeLast(fileName, ".xz");
 		}
 		if (fileName.endsWith(".ser")) {
-			return new ObjectInputStream(inputStream);
+			return new DecompressibleObjectInputStream(inputStream);
 		} else {
 			throw new IllegalArgumentException("Filename must end with .ser, .ser.gz or .ser.xz");
 		}
