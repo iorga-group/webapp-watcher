@@ -15,6 +15,7 @@
  * along with this program.  If not, see [http://www.gnu.org/licenses/].
  */
 function RequestsByQuery($http, $scope, irajTableService, irajBreadcrumbsService, $routeParams, requestUtilsService) {
+	// from http://stackoverflow.com/a/16245768/535203
 	function b64toBlob(b64Data, contentType, sliceSize) {
 		contentType = contentType || '';
 		sliceSize = sliceSize || 1024;
