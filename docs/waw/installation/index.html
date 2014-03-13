@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>Installation</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/x-icon" href="/webapp-watcher/favicon.png" />
+
+		<!--[if lt IE 9]>
+			<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+
+		<!-- syntax highlighting CSS -->
+		<link rel="stylesheet" href="/webapp-watcher/css/syntax.css">
+
+		<!-- Custom CSS -->
+		<link rel="stylesheet" href="/webapp-watcher/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="/webapp-watcher/css/style.css" />
+		<script src="/webapp-watcher/js/jquery.js"></script>
+		<script src="/webapp-watcher/js/bootstrap.min.js"></script>
+		<script src="/webapp-watcher/js/script.js"></script>
+<!--
+		<link rel="stylesheet" href="/webapp-watcher/css/main.css">
+		<link rel="stylesheet" href="/webapp-watcher/css/style.css">
+		<link rel="stylesheet" href="/webapp-watcher/css/bootstrap.min.css">
+-->
+
+	</head>
+	<body>
+
+
+		<header>
+			<nav class="navbar" role="navigation">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="/webapp-watcher/"><img src="/webapp-watcher/img/logo.png" alt="Logo Webapp Watcher"></a>
+				</div>
+				<div class="collapse navbar-collapse">
+					<ul class="nav navbar-nav">
+<!--
+						<li class=""><a href="/webapp-watcher/">Overview</a></li>
+						<li class=""><a href="/webapp-watcher/features/">Features</a></li>
+-->
+						<li class="active"><a href="/webapp-watcher/docs/">Documentation</a></li>
+<!--
+						<li class=""><a href="/webapp-watcher/news/">News</a></li>
+-->
+						<li><a href="https://github.com/iorga-group/webapp-watcher" target="_blank">View on Github</a></li>
+					</ul>
+				</div>
+			</nav>
+		</header>
+
+		<div class="container bs-docs-container">
+	<div class="row">
+		<div class="col-md-3 menu">
+			<div class="bs-sidebar affix">
+				<ul class="nav bs-sidenav">
+					
+						<h4>WAW Filter</h4>
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class="active"><a href="/webapp-watcher/docs/waw/installation/">Installation</a></li>
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/configuration/">Configuration</a></li>
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/runtime-commands/">Runtime commands</a></li>
+								
+							
+								
+							
+								
+							
+						
+					
+						<h4>WAW Analyzer</h4>
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/installation/">Installation</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/configuration/">Configuration</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/usage/">Usage</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+						
+					
+				</ul>
+			</div>
+		</div>
+		<div class="col-md-9 documentation">
+			<h1>Installation</h1>
+			<h2>Adding the jars</h2>
+
+<p>To install WAW in your <code>webapp.war</code>, you must add the <code>webappwatcher-*.jar</code> and its dependencies to the libs of your webapp.</p>
+
+<h3>Manually</h3>
+
+<ol>
+<li><p>Put <code>webappwatcher-*.jar</code> in the <code>WEB-INF/lib/</code> directory of your webapp;</p></li>
+<li><p>Also add in <code>WEB-INF/lib</code> the jar dependencies from the <code>lib/</code> directory of the WAW distribution (be careful not to add jars which would already be present in your webapp);</p></li>
+<li><p>Also add the jars in <code>optional-jar</code> (<code>log4j*</code> &amp; <code>slf4j*</code>) if your application server don&#39;t provide them;</p></li>
+</ol>
+
+<h3>With Maven</h3>
+
+<p>Add this dependency to your project :</p>
+<div class="highlight"><pre><code class="xml language-xml" data-lang="xml">    <span class="nt">&lt;dependency&gt;</span>
+        <span class="nt">&lt;groupId&gt;</span>com.iorga<span class="nt">&lt;/groupId&gt;</span>
+        <span class="nt">&lt;artifactId&gt;</span>webappwatcher<span class="nt">&lt;/artifactId&gt;</span>
+        <span class="nt">&lt;version&gt;</span>1.5.2<span class="nt">&lt;/version&gt;</span>
+        <span class="nt">&lt;scope&gt;</span>runtime<span class="nt">&lt;/scope&gt;</span>
+    <span class="nt">&lt;/dependency&gt;</span>
+</code></pre></div>
+<h2>Integration</h2>
+
+<ol>
+<li><p>Be sure that you&#39;ve got a filter which allows <a href="http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getUserPrincipal()">HttpServletRequest.getUserPrincipal()</a> to return the current logged in user (used by WAW filter);</p></li>
+<li><p>Add this in your <code>WEB-INF/web.xml</code> (just after the filter we talked in the previous point):</p></li>
+</ol>
+<div class="highlight"><pre><code class="xml language-xml" data-lang="xml">    <span class="nt">&lt;filter&gt;</span>
+        <span class="nt">&lt;filter-name&gt;</span>Log Filter<span class="nt">&lt;/filter-name&gt;</span>
+        <span class="nt">&lt;filter-class&gt;</span>com.iorga.webappwatcher.RequestLogFilter<span class="nt">&lt;/filter-class&gt;</span>
+    <span class="nt">&lt;/filter&gt;</span>
+    <span class="nt">&lt;filter-mapping&gt;</span>
+        <span class="nt">&lt;filter-name&gt;</span>Log Filter<span class="nt">&lt;/filter-name&gt;</span>
+        <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+    <span class="nt">&lt;/filter-mapping&gt;</span>
+</code></pre></div>
+<p>With JBoss 7, you also have to add <code>com/sun/management</code> to <code>jboss-as-7/modules/sun/jdk/main/modules.xml</code>:</p>
+<div class="highlight"><pre><code class="xml language-xml" data-lang="xml">...
+<span class="nt">&lt;module</span> <span class="na">xmlns=</span><span class="s">&quot;urn:jboss:module:1.1&quot;</span> <span class="na">name=</span><span class="s">&quot;sun.jdk&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;resources&gt;</span>
+        <span class="c">&lt;!-- currently jboss modules has not way of importing services from</span>
+<span class="c">        classes.jar so we duplicate them here --&gt;</span>
+        <span class="nt">&lt;resource-root</span> <span class="na">path=</span><span class="s">&quot;service-loader-resources&quot;</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/resources&gt;</span>
+    <span class="nt">&lt;dependencies&gt;</span>
+        <span class="nt">&lt;system</span> <span class="na">export=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;paths&gt;</span>
+                <span class="nt">&lt;path</span> <span class="na">name=</span><span class="s">&quot;com/sun/management&quot;</span><span class="nt">/&gt;</span>
+                <span class="nt">&lt;path</span> <span class="na">name=</span><span class="s">&quot;com/sun/script/javascript&quot;</span><span class="nt">/&gt;</span>
+...
+</code></pre></div>
+		</div>
+	</div>
+</div>
+
+
+
+	</body>
+</html>

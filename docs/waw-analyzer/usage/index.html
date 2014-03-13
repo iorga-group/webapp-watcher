@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>Usage</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/x-icon" href="/webapp-watcher/favicon.png" />
+
+		<!--[if lt IE 9]>
+			<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+
+		<!-- syntax highlighting CSS -->
+		<link rel="stylesheet" href="/webapp-watcher/css/syntax.css">
+
+		<!-- Custom CSS -->
+		<link rel="stylesheet" href="/webapp-watcher/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="/webapp-watcher/css/style.css" />
+		<script src="/webapp-watcher/js/jquery.js"></script>
+		<script src="/webapp-watcher/js/bootstrap.min.js"></script>
+		<script src="/webapp-watcher/js/script.js"></script>
+<!--
+		<link rel="stylesheet" href="/webapp-watcher/css/main.css">
+		<link rel="stylesheet" href="/webapp-watcher/css/style.css">
+		<link rel="stylesheet" href="/webapp-watcher/css/bootstrap.min.css">
+-->
+
+	</head>
+	<body>
+
+
+		<header>
+			<nav class="navbar" role="navigation">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="/webapp-watcher/"><img src="/webapp-watcher/img/logo.png" alt="Logo Webapp Watcher"></a>
+				</div>
+				<div class="collapse navbar-collapse">
+					<ul class="nav navbar-nav">
+<!--
+						<li class=""><a href="/webapp-watcher/">Overview</a></li>
+						<li class=""><a href="/webapp-watcher/features/">Features</a></li>
+-->
+						<li class="active"><a href="/webapp-watcher/docs/">Documentation</a></li>
+<!--
+						<li class=""><a href="/webapp-watcher/news/">News</a></li>
+-->
+						<li><a href="https://github.com/iorga-group/webapp-watcher" target="_blank">View on Github</a></li>
+					</ul>
+				</div>
+			</nav>
+		</header>
+
+		<div class="container bs-docs-container">
+	<div class="row">
+		<div class="col-md-3 menu">
+			<div class="bs-sidebar affix">
+				<ul class="nav bs-sidenav">
+					
+						<h4>WAW Filter</h4>
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/installation/">Installation</a></li>
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/configuration/">Configuration</a></li>
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/runtime-commands/">Runtime commands</a></li>
+								
+							
+								
+							
+								
+							
+						
+					
+						<h4>WAW Analyzer</h4>
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/installation/">Installation</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/configuration/">Configuration</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+									<li class="active"><a href="/webapp-watcher/docs/waw-analyzer/usage/">Usage</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+						
+					
+				</ul>
+			</div>
+		</div>
+		<div class="col-md-9 documentation">
+			<h1>Usage</h1>
+			<h2>Analyze</h2>
+
+<p>Features available in <code>Analyze</code> menu.</p>
+
+<p>Mainly used to display requests, filtering them, access to more details, and explore the code which was involved on those requests in order to find potential performance issues.</p>
+
+<h3>Requests by specific query</h3>
+
+<p>Here you can type in a JS script which will return <code>true</code> or <code>false</code> if you want to keep the request in the results or not.</p>
+
+<p>You can use the following variables in that script :</p>
+
+<ul>
+<li><code>headers</code>: a <a href="http://docs.oracle.com/javase/7/docs/api/java/util/Set.html"><code>Set&lt;String&gt;</code></a> of the request headers</li>
+<li><code>parameters</code>: a <a href="http://docs.oracle.com/javase/7/docs/api/java/util/Map.html"><code>Map&lt;String, Set&lt;String&gt;&gt;</code></a> of the request parameters</li>
+<li><code>request</code>: the <a href="https://github.com/iorga-group/webapp-watcher/blob/master/webappwatcher/src/main/java/com/iorga/webappwatcher/eventlog/RequestEventLog.java"><code>RequestEventLog</code></a></li>
+<li><code>requestContainer</code>: the <a href="https://github.com/iorga-group/webapp-watcher/blob/master/waw-analyzer/src/main/java/com/iorga/webappwatcher/analyzer/model/session/RequestsTimesAndStacks.java"><code>RequestsTimesAndStacks.RequestContainer</code></a></li>
+</ul>
+
+<p>Here is a sample script :</p>
+<div class="highlight"><pre><code class="js language-js" data-lang="js"><span class="kd">var</span> <span class="nx">setContains</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">set</span><span class="p">,</span> <span class="nx">containsFn</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">set</span><span class="p">)</span> <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">it</span> <span class="o">=</span> <span class="nx">set</span><span class="p">.</span><span class="nx">iterator</span><span class="p">();</span>
+    <span class="k">while</span> <span class="p">(</span><span class="nx">it</span><span class="p">.</span><span class="nx">hasNext</span><span class="p">())</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">containsFn</span><span class="p">(</span><span class="nx">it</span><span class="p">.</span><span class="nx">next</span><span class="p">()))</span> <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">var</span> <span class="nx">match</span> <span class="o">=</span> <span class="nx">setContains</span><span class="p">(</span><span class="nx">parameters</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;myform:mybutton&#39;</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">value</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s1">&#39;SEARCH&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">;});</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">method</span> <span class="o">==</span> <span class="s1">&#39;POST&#39;</span> <span class="o">&amp;&amp;</span> <span class="nx">request</span><span class="p">.</span><span class="nx">requestURI</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s1">&#39;home.xhtml&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="nx">match</span>
+</code></pre></div>
+<p>Or more simple :</p>
+<div class="highlight"><pre><code class="js language-js" data-lang="js"><span class="s1">&#39;myuser&#39;</span><span class="p">.</span><span class="nx">equals</span><span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">getPrincipal</span><span class="p">())</span>
+</code></pre></div>
+<p>On a request line you can display the details of the request.</p>
+
+<p>You can also download the result as an .csv or .xlsx file.</p>
+
+<h3>Requests times and stacks</h3>
+
+<p>Here the requests are grouped by &quot;URL&quot;.</p>
+
+<p>You can analyze display stacks involved in the requests by group (click on a request group &gt; <code>Stacks grouped</code>) or for a specific request (click on a request group &gt; <code>Stacks per request</code>, then select your request, and display details or stacks for that request.</p>
+
+<h3>All requests list</h3>
+
+<p>The list of all requests.</p>
+
+<p>Can be slow to display depending on the data you have in your logs.</p>
+
+<p>Once displayed, you can filter the requests for a given principal (user name), and ask for <code>only actions</code> which will filter out &quot;static&quot; requests (like .jpg or .css requests).</p>
+
+<p>On a request line you can display the details of the request.</p>
+
+<h2>Statistics</h2>
+
+<h3>Time slice list</h3>
+
+<p>List of time slices which are used for graphs and daily statistics.</p>
+
+<p>For each time slice, here are the information:</p>
+
+<ul>
+<li><code>startDate</code>: Start date</li>
+<li><code>endDate</code>: End date</li>
+<li><code>distinctUsers</code>: Number of distinct users count on that time slice. Based on the principal (user name) of the request.</li>
+<li><code>numberOfRequests</code>: Total number of requests count</li>
+<li><code>durationsFor1click*</code>: Represents the times between a request arrival on the server and its reply. Concerns only the &quot;actions&quot; of the users, and the <a href="../configuration/#type-of-webapp">&quot;type of webapp&quot; configuration</a> determines what is a &quot;user action&quot; and what is not. Requests for static resources are not considered &quot;user action&quot; for example.
+
+<ul>
+<li><code>durationsFor1clickSum</code>: Sum of those times in the time slice</li>
+<li><code>durationsFor1clickMean</code>: Mean of those times in the time slice</li>
+<li><code>durationsFor1clickMedian</code>: Median of those times in the time slice</li>
+<li><code>durationsFor1click90c</code>: 90th percentile of those times in the time slice</li>
+<li><code>durationsFor1clickMin</code>: 90th percentile of those times in the time slice</li>
+<li><code>durationsFor1clickMax</code>: 90th percentile of those times in the time slice</li>
+</ul></li>
+</ul>
+
+<h3>Daily statistics</h3>
+
+<p>Group the time slice list previously defined by day.</p>
+
+<p>Gives for each day, the <code>min</code>, <code>max</code>, <code>mean</code> and <code>median</code> of each figures of the time slices.</p>
+
+<p>Also displays the number of distinct users for that day.</p>
+
+<h2>Graphs</h2>
+
+<h3>Request graph</h3>
+
+<p>Displays the graph of all loaded event log files.</p>
+
+<p>You can zoom in/out by scrolling, and move left/right by left/right drag &amp; drop.</p>
+
+<p>You can display those series (each point corresponds to a time slice):</p>
+
+<ul>
+<li><code>x - y ms</code>: Number of requests (actions) which last between x and y milliseconds</li>
+<li><code>Memory (Mean)</code>: Mean memory usage</li>
+<li><code>CPU (Mean)</code>: Mean CPU usage</li>
+<li><code>Users</code>: Max number of active users</li>
+<li><code>Median</code>: Median of &quot;durations for 1 click&quot;</li>
+</ul>
+
+<h3>Request graph per day</h3>
+
+<p>Same as previous graph, but displayed by day.</p>
+
+<p>You can cut the displayed graphs by setting starting and ending time.</p>
+
+		</div>
+	</div>
+</div>
+
+
+
+	</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>Installation</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/x-icon" href="/webapp-watcher/favicon.png" />
+
+		<!--[if lt IE 9]>
+			<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+
+		<!-- syntax highlighting CSS -->
+		<link rel="stylesheet" href="/webapp-watcher/css/syntax.css">
+
+		<!-- Custom CSS -->
+		<link rel="stylesheet" href="/webapp-watcher/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="/webapp-watcher/css/style.css" />
+		<script src="/webapp-watcher/js/jquery.js"></script>
+		<script src="/webapp-watcher/js/bootstrap.min.js"></script>
+		<script src="/webapp-watcher/js/script.js"></script>
+<!--
+		<link rel="stylesheet" href="/webapp-watcher/css/main.css">
+		<link rel="stylesheet" href="/webapp-watcher/css/style.css">
+		<link rel="stylesheet" href="/webapp-watcher/css/bootstrap.min.css">
+-->
+
+	</head>
+	<body>
+
+
+		<header>
+			<nav class="navbar" role="navigation">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="/webapp-watcher/"><img src="/webapp-watcher/img/logo.png" alt="Logo Webapp Watcher"></a>
+				</div>
+				<div class="collapse navbar-collapse">
+					<ul class="nav navbar-nav">
+<!--
+						<li class=""><a href="/webapp-watcher/">Overview</a></li>
+						<li class=""><a href="/webapp-watcher/features/">Features</a></li>
+-->
+						<li class="active"><a href="/webapp-watcher/docs/">Documentation</a></li>
+<!--
+						<li class=""><a href="/webapp-watcher/news/">News</a></li>
+-->
+						<li><a href="https://github.com/iorga-group/webapp-watcher" target="_blank">View on Github</a></li>
+					</ul>
+				</div>
+			</nav>
+		</header>
+
+		<div class="container bs-docs-container">
+	<div class="row">
+		<div class="col-md-3 menu">
+			<div class="bs-sidebar affix">
+				<ul class="nav bs-sidenav">
+					
+						<h4>WAW Filter</h4>
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/installation/">Installation</a></li>
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/configuration/">Configuration</a></li>
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/runtime-commands/">Runtime commands</a></li>
+								
+							
+								
+							
+								
+							
+						
+					
+						<h4>WAW Analyzer</h4>
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class="active"><a href="/webapp-watcher/docs/waw-analyzer/installation/">Installation</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/configuration/">Configuration</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/usage/">Usage</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+						
+					
+				</ul>
+			</div>
+		</div>
+		<div class="col-md-9 documentation">
+			<h1>Installation</h1>
+			<h2>Prerequisites</h2>
+
+<p>JDK 7 installed in the PATH. (Check <code>javac -v</code> and <code>java -v</code> to be sure it&#39;s 7).</p>
+
+<h2>Checkout the code</h2>
+<div class="highlight"><pre><code class="bash language-bash" data-lang="bash">git clone https://github.com/iorga-group/webapp-watcher.git
+<span class="nb">cd </span>webapp-watcher
+</code></pre></div>
+<h2>Build</h2>
+<div class="highlight"><pre><code class="bash language-bash" data-lang="bash"><span class="nb">cd </span>waw-analyzer-parent
+mvn clean <span class="o">&amp;&amp;</span> mvn package
+</code></pre></div>
+<p>This will generate <code>/waw-analyzer/target/waw-analyzer-&lt;version&gt;.war</code>.</p>
+
+<h2>Install in an Application Server</h2>
+
+<p>Just move the built war to your Application Server wars directory (depends on each Application Server, <code>$TOMCAT_HOME/webapps</code> for Tomcat for example).</p>
+
+<p>WAW-Analyzer will be accessible at <a href="http://localhost:8080/waw-analyzer/">http://localhost:8080/waw-analyzer/</a>.</p>
+
+<h2><a name="create-self-running-java-application"></a>Create self-running Java application</h2>
+
+<p>In order to create self-running Java application (that is to say independent from any Application Server), go to <code>waw-analyzer-parent</code> directory, run :</p>
+<div class="highlight"><pre><code class="bash language-bash" data-lang="bash">mvn package org.apache.tomcat.maven:tomcat7-maven-plugin:exec-war-only
+</code></pre></div>
+<p>This will generate <code>/waw-analyzer/target/waw-analyzer-&lt;version&gt;-war-exec.jar</code>.</p>
+
+<p>You can then start WAW-Analyzer with :</p>
+<div class="highlight"><pre><code class="bash language-bash" data-lang="bash">java -jar waw-analyzer-&lt;version&gt;-war-exec.jar
+</code></pre></div>
+<p>WAW-Analyzer will be accessible at <a href="http://localhost:8080/">http://localhost:8080/</a>.</p>
+
+<p>You can optionnaly pass in <a href="http://tomcat.apache.org/maven-plugin-trunk/executable-war-jar.html#Generated_executable_jarwar">options</a> to change for example the listening port (instead of default <code>8080</code>).</p>
+
+		</div>
+	</div>
+</div>
+
+
+
+	</body>
+</html>

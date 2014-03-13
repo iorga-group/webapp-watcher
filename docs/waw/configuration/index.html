@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>Configuration</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" type="image/x-icon" href="/webapp-watcher/favicon.png" />
+
+		<!--[if lt IE 9]>
+			<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+
+		<!-- syntax highlighting CSS -->
+		<link rel="stylesheet" href="/webapp-watcher/css/syntax.css">
+
+		<!-- Custom CSS -->
+		<link rel="stylesheet" href="/webapp-watcher/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="/webapp-watcher/css/style.css" />
+		<script src="/webapp-watcher/js/jquery.js"></script>
+		<script src="/webapp-watcher/js/bootstrap.min.js"></script>
+		<script src="/webapp-watcher/js/script.js"></script>
+<!--
+		<link rel="stylesheet" href="/webapp-watcher/css/main.css">
+		<link rel="stylesheet" href="/webapp-watcher/css/style.css">
+		<link rel="stylesheet" href="/webapp-watcher/css/bootstrap.min.css">
+-->
+
+	</head>
+	<body>
+
+
+		<header>
+			<nav class="navbar" role="navigation">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="/webapp-watcher/"><img src="/webapp-watcher/img/logo.png" alt="Logo Webapp Watcher"></a>
+				</div>
+				<div class="collapse navbar-collapse">
+					<ul class="nav navbar-nav">
+<!--
+						<li class=""><a href="/webapp-watcher/">Overview</a></li>
+						<li class=""><a href="/webapp-watcher/features/">Features</a></li>
+-->
+						<li class="active"><a href="/webapp-watcher/docs/">Documentation</a></li>
+<!--
+						<li class=""><a href="/webapp-watcher/news/">News</a></li>
+-->
+						<li><a href="https://github.com/iorga-group/webapp-watcher" target="_blank">View on Github</a></li>
+					</ul>
+				</div>
+			</nav>
+		</header>
+
+		<div class="container bs-docs-container">
+	<div class="row">
+		<div class="col-md-3 menu">
+			<div class="bs-sidebar affix">
+				<ul class="nav bs-sidenav">
+					
+						<h4>WAW Filter</h4>
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/installation/">Installation</a></li>
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class="active"><a href="/webapp-watcher/docs/waw/configuration/">Configuration</a></li>
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw/runtime-commands/">Runtime commands</a></li>
+								
+							
+								
+							
+								
+							
+						
+					
+						<h4>WAW Analyzer</h4>
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/installation/">Installation</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/configuration/">Configuration</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+						
+							
+								
+							
+							
+								
+							
+								
+							
+								
+									<li class=""><a href="/webapp-watcher/docs/waw-analyzer/usage/">Usage</a></li>
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+								
+							
+						
+					
+				</ul>
+			</div>
+		</div>
+		<div class="col-md-9 documentation">
+			<h1>Configuration</h1>
+			<h2>Where to define your configurations</h2>
+
+<p>You can configure the default behaviors of WAW by setting values to specific configuration parameters either in the <code>web.xml</code> in <code>&lt;init-param&gt;</code>s like this :</p>
+<div class="highlight"><pre><code class="xml language-xml" data-lang="xml">    <span class="nt">&lt;filter&gt;</span>
+        <span class="nt">&lt;filter-name&gt;</span>Log Filter<span class="nt">&lt;/filter-name&gt;</span>
+        <span class="nt">&lt;filter-class&gt;</span>com.iorga.webappwatcher.RequestLogFilter<span class="nt">&lt;/filter-class&gt;</span>
+        <span class="nt">&lt;init-param&gt;</span>
+            <span class="nt">&lt;param-name&gt;</span>requestNameIncludes<span class="nt">&lt;/param-name&gt;</span>
+            <span class="nt">&lt;param-value&gt;</span>.*\.xhtml<span class="nt">&lt;/param-value&gt;</span>
+        <span class="nt">&lt;/init-param&gt;</span>
+    <span class="nt">&lt;/filter&gt;</span>
+</code></pre></div>
+<p>Or you can add the file <code>WEB-INF/classes/webappwatcher.properties</code> with classic <code>key=value</code> declarations like this :</p>
+<div class="highlight"><pre><code class="text language-text" data-lang="text"># A comment
+requestNameIncludes=.*\.xhtml
+</code></pre></div>
+<h2>Main configuration parameters</h2>
+
+<h3><code>requestNameIncludes</code></h3>
+
+<p>List of regexp (separated by commas) to include requests (based on their <code>requestURI</code>).</p>
+
+<p>Default value : <code>.*\\.xhtml</code></p>
+
+<h3><code>requestNameExcludes</code></h3>
+
+<p>List of regexp (separated by commas) to exclude requests (based on their <code>requestURI</code>).</p>
+
+<p><code>requestNameIncludes</code> is tested first and if the request matched, <code>requestNameExcludes</code> is tested.</p>
+
+<p>Default value : <em>empty</em></p>
+
+<h3><a name="cmdRequestName"></a><code>cmdRequestName</code></h3>
+
+<p>Base path alowing one to access to the filter GUI &amp; &quot;WebService&quot;.</p>
+
+<p>Default value : <code>RequestLogFilterCmd</code></p>
+
+<h3><a name="waitForEventLogToCompleteMillis"></a><code>waitForEventLogToCompleteMillis</code></h3>
+
+<p>The log writing thread will wait for that amount of time (in millis) for a request to be completed. If it&#39;s still not completed, at the end of that time, will log the request if <code>completed</code> field set to <code>false</code>.</p>
+
+<p>Default value : <code>300000</code> <em>(5mn)</em></p>
+
+<h3><code>logPath</code></h3>
+
+<p>Path to write WAW log files, containing base log file (without the extension).</p>
+
+<p>Default value : <code>webappwatcherlog</code></p>
+
+<h3><a name="eventLogRetentionMillis"></a><code>eventLogRetentionMillis</code></h3>
+
+<p>The requests are stored in memory that amount of time before being logged or withdrawn (depending of crossed CPU threshold for example).</p>
+
+<p>Default value : <code>300000</code> <em>(5mn)</em></p>
+
+<h3><code>maxLogFileSizeMo</code></h3>
+
+<p>Maximum length of a log file in MB. If the current log cross that limit, a new log file is created</p>
+
+<p>Default value : <code>100</code></p>
+
+<h3><code>cpuComputationDeltaMillis</code></h3>
+
+<p>Time to wait in millis before creating a new &quot;SystemEventLog&quot; log (containing stacktraces, CPU, memory usage).</p>
+
+<p>Default value : <code>300</code></p>
+
+<h3><code>threadNameIncludes</code></h3>
+
+<p>List of regexp (separated by commas) to include stacktraces based on their Thread&#39;s name.</p>
+
+<p>Default value : <code>http.*</code></p>
+
+<h3><code>threadNameExcludes</code></h3>
+
+<p>List of regexp (separated by commas) to exclude stacktraces based on their Thread&#39;s name. <code>threadNameIncludes</code> is evaluated first, and if the Thread&#39;s name matched, <code>threadNameExcludes</code> is tested.</p>
+
+<p>Default value : <em>empty</em></p>
+
+<h3><a name="eventLogWatchers"></a><code>eventLogWatchers</code></h3>
+
+<p>List of &quot;Watcher&quot; class names separated by commas which trigger log writing.</p>
+
+<p>Possible values :</p>
+
+<table><thead>
+<tr>
+<th>Watcher class name</th>
+<th>Watcher description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><code>com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher</code></td>
+<td>Observes CPU pics, and logs the event log queue if the configured threshold is crossed.</td>
+</tr>
+<tr>
+<td><code>com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher</code></td>
+<td>Observes the events which would be deleted (if no watcher asked to write the event log queue, <a href="#eventLogRetentionMillis"><code>eventLogRetentionMillis</code></a> is reached) and asks to write only <code>RequestEventLog</code> events. Necessary to keep reasonnable log file size (by filtering out &quot;big&quot; log events like <code>SystemEventLog</code>s).</td>
+</tr>
+<tr>
+<td><code>com.iorga.webappwatcher.watcher.RequestDurationWatcher</code></td>
+<td>Observes too long requests (or lasting more than <a href="#waitForEventLogToCompleteMillis"><code>waitForEventLogToCompleteMillis</code></a>) and asks to log all events if the threashold is reached.</td>
+</tr>
+<tr>
+<td><code>com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher</code></td>
+<td>Observes log writings and send alert mails if configured.</td>
+</tr>
+</tbody></table>
+
+<p>Default value :</p>
+<div class="highlight"><pre><code class="text language-text" data-lang="text">com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher,com.iorga.webappwatcher.watcher.WriteAllRequestsWatcher,com.iorga.webappwatcher.watcher.RequestDurationWatcher,com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher
+</code></pre></div>
+<h2>Configuration parameters <a href="#eventLogWatchers">specific</a> to <code>com.iorga.webappwatcher.watcher.CpuCriticalUsageWatcher</code></h2>
+
+<h3><code>criticalCpuUsage</code></h3>
+
+<p>If that CPU threshold (in %, float) is crossed, the event log queue in memory is flushed to disk.</p>
+
+<p>Default value : 1.5 CPU by default, which means <code>75</code> if you have 2 CPUs (100 / nb_CPU * 1.5)</p>
+
+<h3><code>deadLockThreadsSearchDeltaMillis</code></h3>
+
+<p>Time to wait in millis before triggering a new DeadLockThread detection.</p>
+
+<p>Default value : <code>300000</code> <em>(5mn)</em></p>
+
+<h2>Configuration parameters <a href="#eventLogWatchers">specific</a> to <code>com.iorga.webappwatcher.watcher.RequestDurationWatcher</code></h2>
+
+<h3><code>requestDurationLimits</code></h3>
+
+<p>List of regexp (separated by commas) mapping request to a timeout (in millis).</p>
+
+<p>If the request matching the regexp last more than the mapped timeout, a full event log queue flush is triggered.</p>
+
+<p>Example : <code>.*/login\\.xhtml:60000</code> will flush to disk all the events if a request matching <code>.*/login\\.xhtml</code> last more than 60s (60000ms).</p>
+
+<p>Default value : <code>.*\\.xhtml:30000</code></p>
+
+<h2>Configuration parameters <a href="#eventLogWatchers">specific</a> to <code>com.iorga.webappwatcher.watcher.RetentionLogWritingWatcher</code></h2>
+
+<h3><code>writingEventsCooldown</code></h3>
+
+<p>List of regexp (separated by commas) mapping watcher name and event&#39;s name to a cooldown time (in seconds).</p>
+
+<p>If a mail is sent to warn about a specific event, another couldn&#39;t be sent for the same event while the mapped cooldown time has not passed.</p>
+
+<p>The format is : <code>&lt;WatcherNameRegexp&gt;#&lt;EventNameRegexp&gt;:&lt;CooldownInSeconds&gt;</code>. Example : <code>.*CpuCriticalUsageWatcher#criticalCpuUsage:1800</code> will send &quot;criticalCpuUsage&quot; events mails only every 30 minutes minimum.</p>
+
+<p>A cooldown of <code>-1</code> forbid to send mail for mapped events.</p>
+
+<p>Default value : <code>.*RequestLogFilter#.*:-1,.*WriteAllRequestsWatcher#.*:-1,.*:1800</code></p>
+
+<h3><code>mailSmtpHost</code></h3>
+
+<p>SMTP host for alert mails.</p>
+
+<p>Default value : <em>empty</em></p>
+
+<h3><code>mailSmtpPort</code></h3>
+
+<p>SMTP host&#39;s port for alert mails.</p>
+
+<p>Default value : <code>25</code></p>
+
+<h3><code>mailSmtpAuth</code></h3>
+
+<p>If an authentication is required for the SMTP server (boolean : yes/true/no/false/<em>empty</em> is accepted).</p>
+
+<p>Default value : <em>empty</em></p>
+
+<h3><code>mailSmtpUsername</code></h3>
+
+<p>Username for the SMTP server authentication.</p>
+
+<p>Default value : <em>empty</em></p>
+
+<h3><code>mailSmtpPassword</code></h3>
+
+<p>Password for the SMTP server authentication.</p>
+
+<p>Default value : <em>empty</em></p>
+
+<h3><code>mailSmtpSecurityType</code></h3>
+
+<p>SMTP authentication type : <code>SSL</code> or <code>TLS</code>.</p>
+
+<p>Default value : <em>empty</em></p>
+
+<h3><code>mailFrom</code></h3>
+
+<p>Source email address for alert mails.</p>
+
+<p>Default value : <em>empty</em></p>
+
+<h3><code>mailTo</code></h3>
+
+<p>Destination email address(es) for alert mails.</p>
+
+<p>Default value : <em>empty</em></p>
+
+		</div>
+	</div>
+</div>
+
+
+
+	</body>
+</html>

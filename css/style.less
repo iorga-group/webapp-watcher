@@ -1,0 +1,162 @@
+/* Top nav */
+
+header nav.navbar {
+	font-family: 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif; 
+	background: #2E7BCF url(../img/header-bg.jpg) 0 0 repeat-x;
+	border-bottom: solid 1px #275DA1;
+	border-radius: 0px;
+	height: 119px;
+
+	.navbar-brand {
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+
+	ul {
+		padding-top: 27px;
+	}
+
+	li {
+		border-radius: 5px;
+		font-weight: bolder;
+		font-size: 16px;
+		padding: 0.5em 1em;
+
+		a {
+			color: #9DDCFF;
+			text-decoration: none;
+
+			text-transform: uppercase;
+			transition: all .25s;
+			-moz-transition: all .25s;
+			-webkit-transition: all .25s;
+		}
+
+		a:hover {
+			color: #428BCA;
+			background: #EEEEEE;
+			box-shadow: inset 0 1px 3px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.1);
+			border-radius: 5px;
+		}
+	}
+
+	.active a, .active a:hover, navbar-toggle {
+		background: #428BCA;
+		color: #FFFFFF;
+		box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 5px rgba(0,0,0,.5);
+		border-radius: 5px;
+	}
+
+	.icon-bar {
+		background-color: #fff;
+	}
+}
+
+/*
+ * Side nav
+ */
+
+
+.bs-sidebar {
+	/* First level of nav */
+	margin-top: 5px;
+	margin-bottom: 30px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	text-shadow: 0 1px 0 #FFFFFF;
+	background-color: #FAFAFA;
+	border-radius: 10px;
+	
+	box-shadow: 0 3px 10px rgba(0,0,0,.1);
+
+	&.affix {
+		/* By default it's not affixed in mobile views, so undo that */
+		position: static;
+	}
+	h4 {
+		/*
+		text-transform: uppercase;*/
+		font-weight: 700;
+		padding: 0 0 10px 30px;
+		/*margin-left: -30px;
+		display: inline-block;*/
+		border-bottom: 1px solid #c00;
+	}
+	.nav {
+		> li > a {
+			/* All levels of nav */
+			display: block;
+			color: #428BCA;
+			padding: 5px 20px;
+
+			&:hover, &:focus {
+				color: #FFFFFF;
+				text-decoration: none;
+				background-color: #428BCA;
+				border-right: 3px solid #428BCA;
+			}
+		}
+		> .active { &, &:hover, &:focus { > a {
+			font-weight: bold;
+			color: #428BCA;
+			background-color: transparent;
+			border-right: 3px solid #428BCA;
+		}}}
+		.nav {
+			/* Nav: second level (shown on .active) */
+			display: block; /* Hide by default, but at >768px, show it */
+			margin-bottom: 8px;
+			> li > a {
+				padding-top:    3px;
+				padding-bottom: 3px;
+				padding-left: 30px;
+				font-size: 90%;
+			}
+		}
+	}
+}
+
+/* Font based on https://fonts.googleapis.com/css?family=Architects+Daughter */
+@font-face {
+  font-family: 'Architects Daughter';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Architects Daughter'), local('ArchitectsDaughter'), url(../font/ArchitectsDaughter.woff) format('woff');
+}
+
+
+/* Show and affix the side nav when space allows it */
+@media screen and (min-width: 992px) {
+	.bs-sidebar .nav > .active > ul {
+		display: block;
+	}
+	/* Widen the fixed sidebar */
+	.bs-sidebar.affix, .bs-sidebar.affix-bottom {
+		width: 213px;
+	}
+	.bs-sidebar.affix {
+		position: fixed; /* Undo the static from mobile first approach */
+		top: 200px;
+	}
+	.bs-sidebar.affix-bottom {
+		position: absolute; /* Undo the static from mobile first approach */
+	}
+	.bs-sidebar.affix-bottom .bs-sidenav, .bs-sidebar.affix .bs-sidenav {
+		margin-top: 0;
+		margin-bottom: 0;
+	}
+}
+
+@media screen and (min-width: 1200px) {
+	/* Widen the fixed sidebar again */
+	.bs-sidebar.affix-bottom, .bs-sidebar.affix {
+		width: 263px;
+	}
+}
+
+/* Documentation */
+.documentation {
+	table, tr, th, td {
+		border: 1px solid #cccccc;
+	}
+}
