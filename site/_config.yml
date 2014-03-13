@@ -2,6 +2,8 @@ name: Webapp-Watcher
 markdown: redcarpet
 pygments: true
 repository: 'https://github.com/iorga-group/webapp-watcher'
+baseurl: /webapp-watcher
+url: http://iorga-group.github.io
 
 redcarpet:
   extensions: ["tables"]

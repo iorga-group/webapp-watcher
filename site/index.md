@@ -7,10 +7,10 @@ Webapp Watcher (WAW) is a Java EE Filter which alows you to log the requests res
 
 Record, then analyze.
 
-![Requests time statistics]({{ site.url }}/img/waw-analyzer/requests-graph.jpg "Requests time statistics")
+![Requests time statistics]({{ site.baseurl }}/img/waw-analyzer/requests-graph.jpg "Requests time statistics")
 
 ... and find your performance problem.
 
-![Requests grouped stacks]({{ site.url }}/img/waw-analyzer/requests-grouped-stacks.png "Requests grouped stacks")
+![Requests grouped stacks]({{ site.baseurl }}/img/waw-analyzer/requests-grouped-stacks.png "Requests grouped stacks")
 
-Find more in the [documentation section]({{ site.url }}/docs/).
+Find more in the [documentation section]({{ site.baseurl }}/docs/).
