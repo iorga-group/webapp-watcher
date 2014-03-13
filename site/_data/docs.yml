@@ -1,0 +1,12 @@
+en:
+  - title: WAW Filter
+    urls:
+    - /docs/waw/installation/
+    - /docs/waw/configuration/
+    - /docs/waw/runtime-commands/
+  - title: WAW Analyzer
+    urls:
+    - /docs/waw-analyzer/installation/
+    - /docs/waw-analyzer/configuration/
+    - /docs/waw-analyzer/usage/
+

@@ -1,0 +1,10 @@
+name: Webapp-Watcher
+markdown: redcarpet
+pygments: true
+repository: 'https://github.com/iorga-group/webapp-watcher'
+
+redcarpet:
+  extensions: ["tables"]
+lessc: 'node_modules/less/bin/lessc'
+
+exclude: ['Rakefile', 'README.md', 'package.json', 'node_modules']
