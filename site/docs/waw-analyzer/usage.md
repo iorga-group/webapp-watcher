@@ -5,6 +5,9 @@ permalink: usage/
 lang: en
 ---
 
+## Process to find performance issues in your webapp
+Go to `Analyze` > `Requests times and stacks` and [follow the documentation of that feature.](#analyze-requests-times-and-stacks).
+
 ## Analyze
 Features available in `Analyze` menu.
 
@@ -44,10 +47,22 @@ On a request line you can display the details of the request.
 
 You can also download the result as an .csv or .xlsx file.
 
-### Requests times and stacks
+### <a name="analyze-requests-times-and-stacks"></a>Requests times and stacks
 Here the requests are grouped by "URL".
 
-You can analyze display stacks involved in the requests by group (click on a request group > `Stacks grouped`) or for a specific request (click on a request group > `Stacks per request`, then select your request, and display details or stacks for that request.
+Order results by descending mean or median time (by clicking on the column name you want).
+
+![Requests times and stacks]({{ site.baseurl }}/img/waw-analyzer/analyze-requests-times-and-stacks.png "Requests times and stacks")
+
+You can display the code stacks involved in the requests by group (click on a request group > `Stacks grouped`) or for a specific request (click on a request group > `Stacks per request`, then select your request, and display details or stacks for that request.
+
+To find potential performance issues in the code, click on the worst line and display the stacks.
+
+![Requests grouped stacks]({{ site.baseurl }}/img/waw-analyzer/requests-grouped-stacks.png "Requests grouped stacks")
+
+Here you can travel through the code. Open every line which have the max number of stacks (at the right, which corresponds to the time passed in that code).
+
+With that technic, you can go to the root of the performance issue.
 
 ### All requests list
 The list of all requests.
@@ -89,9 +104,11 @@ Also displays the number of distinct users for that day.
 ### Request graph
 Displays the graph of all loaded event log files.
 
+![Requests time statistics]({{ site.baseurl }}/img/waw-analyzer/requests-graph.jpg "Requests time statistics")
+
 You can zoom in/out by scrolling, and move left/right by left/right drag & drop.
 
-You can display those series (each point corresponds to a time slice):
+By clicking on the `Change displayed series`, you can display those series (each point corresponds to a time slice):
 
  * `x - y ms`: Number of requests (actions) which last between x and y milliseconds
  * `Memory (Mean)`: Mean memory usage
