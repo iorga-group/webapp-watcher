@@ -18,20 +18,23 @@ namespace :site do
 
   desc "Generate and publish blog to gh-pages"
   task :publish => [:generate] do
+    sha = `git log`.match(/[a-z0-9]{40}/)[0]
     Dir.mktmpdir do |tmp|
       cp_r "_site/.", tmp
-
-      pwd = Dir.pwd
-      Dir.chdir tmp
-
-      sh "git init"
-      sh "git add ."
-      message = "Site updated at #{Time.now.utc}"
-      sh "git commit -m #{message.inspect}"
-      sh "git remote add origin git@github.com:#{GITHUB_REPONAME}.git"
-      sh "git push origin master:refs/heads/gh-pages --force"
-
-      Dir.chdir pwd
+      Dir.mktmpdir do |tmp2|
+        Dir.chdir(tmp2) do
+          sh "git clone git@github.com:#{GITHUB_REPONAME} gh-pages"
+          Dir.chdir('gh-pages') do
+            sh "git checkout gh-pages"
+            sh "git pull origin gh-pages"
+            sh "rm -rf *"
+            cp_r "#{tmp}/.", "./"
+            sh "git add ."
+            sh "git commit -m 'Updating to #{sha} at #{Time.now.utc}'"
+            sh "git push origin gh-pages"
+          end
+        end
+      end
     end
 
     puts 'Done.'
