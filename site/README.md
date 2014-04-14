@@ -39,5 +39,5 @@ rake site:publish
 To test locally the website and devlop on it, run the following command :
 
 ```bash
-jekyll serve -w --baseurl ''
+jekyll serve -w
 ```
