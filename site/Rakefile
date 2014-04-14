@@ -11,13 +11,31 @@ require "jekyll"
 GITHUB_REPONAME = "iorga-group/webapp-watcher"
 
 namespace :site do
+
   desc "Generate blog files"
   task :generate do
+    sh "rm -rf _site"
+    sh "npm install"
     sh "jekyll build"
   end
 
+  desc "Generate remote blog files"
+  task :generate_remote do
+    sh "rm -rf _site"
+    pwd = Dir.pwd
+    Dir.mktmpdir do |tmp|
+      Dir.chdir(tmp) do
+        sh "git clone git@github.com:#{GITHUB_REPONAME} master"
+        Dir.chdir(File.join('master', 'site')) do
+          Rake::Task['site:generate'].invoke
+          cp_r "_site/.", File.join(pwd, "_site")
+        end
+      end
+    end
+  end
+
   desc "Generate and publish blog to gh-pages"
-  task :publish => [:generate] do
+  task :publish => [:generate_remote] do
     sha = `git log`.match(/[a-z0-9]{40}/)[0]
     Dir.mktmpdir do |tmp|
       cp_r "_site/.", tmp
