@@ -1,5 +1,9 @@
 /* Top nav */
 
+body {
+	font-family: "Open Sans";
+}
+
 header nav.navbar {
 	font-family: 'Architects Daughter', 'Helvetica Neue', Helvetica, Arial, serif; 
 	background: #2E7BCF url(../img/header-bg.jpg) 0 0 repeat-x;
@@ -124,6 +128,25 @@ header nav.navbar {
   src: local('Architects Daughter'), local('ArchitectsDaughter'), url(../font/ArchitectsDaughter.woff) format('woff');
 }
 
+/* Font based on https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700 */
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans'), local('OpenSans'), url(../font/OpenSans.woff) format('woff');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Open Sans Bold'), local('OpenSans-Bold'), url(../font/OpenSans-Bold.woff) format('woff');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 400;
+  src: local('Open Sans Italic'), local('OpenSans-Italic'), url(../font/OpenSans-Italic.woff) format('woff');
+}
 
 /* Show and affix the side nav when space allows it */
 @media screen and (min-width: 992px) {

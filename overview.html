@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-		<title>Webapp Watcher - Record, analyze to optimize</title>
+		<title>Webapp Watcher - Overview</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<link rel="icon" type="image/x-icon" href="/favicon.png" />
 
@@ -45,7 +45,7 @@
 				</div>
 				<div class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
-						<li class=""><a href="/overview.html">Overview</a></li>
+						<li class="active"><a href="/overview.html">Overview</a></li>
 <!--
 						<li class=""><a href="/">Overview</a></li>
 						<li class=""><a href="/features/">Features</a></li>
@@ -63,18 +63,28 @@
 
 		<div class="container">
 	<div class="row">
-		<h1>Record, analyze to optimize</h1>
-		<p>Webapp Watcher (WAW) is a Java EE Filter which alows you to log the requests response times and Java stack traces of a Java EE web application (.war). You can later compute usage statistics of the web application, and also track down potential bugs with the tool &quot;waw-analyzer&quot;.</p>
+		<h1>Overview</h1>
+		<p>Webapp Watcher analysis is split into two phases.</p>
 
-<p>Record, then analyze.</p>
+<h2>Logging</h2>
 
-<p><img src="/img/waw-analyzer/requests-graph.jpg" alt="Requests time statistics" title="Requests time statistics"></p>
+<p>The first one is the logging.</p>
 
-<p>... and find your performance problem.</p>
+<p>Webapp Watcher Filter listens and logs every HTTP requests that come to the application.</p>
 
-<p><img src="/img/waw-analyzer/requests-grouped-stacks.png" alt="Requests grouped stacks" title="Requests grouped stacks"></p>
+<p>In parallel, it registers the JVM stacktraces of each targeted threads and logs them too.</p>
 
-<p>Find more in the <a href="/docs/">documentation section</a>.</p>
+<p><img src="/img/waw/waw-filter-schema.png" alt="WAW Filter Schema" title="WAW Filter Schema"></p>
+
+<h2>Analysing</h2>
+
+<p>The second phase is the analysis itself.</p>
+
+<p>WAW-Analyzer is a software you run outside of WAW Filter.</p>
+
+<p>You load the logs created by WAW Filter and then you can display metrics (for exemple median response time), and for a given long request, display it stacktrace time tree and find potential performance issues directly in your code.</p>
+
+<p><img src="/img/waw-analyzer/waw-analyzer-schema.png" alt="WAW Analyzer Schema" title="WAW Analyzer Schema"></p>
 
 	</div>
 </div>
