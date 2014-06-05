@@ -90,7 +90,7 @@ public class RetentionLogWritingWatcher {
 		}
 	}
 
-	private void sendMailForEvent(final RetentionLogWritingEvent event) {
+	protected void sendMailForEvent(final RetentionLogWritingEvent event) {
 		log.info("Trying to send a mail for event "+event);
 
 		new Thread(new Runnable() {

@@ -300,7 +300,7 @@ public class RequestLogFilter implements Filter {
 		parametersContext.put(WriteAllRequestsWatcher.class, writeAllRequestsWatcher);
 		final RequestDurationWatcher requestDurationWatcher = new RequestDurationWatcher();
 		parametersContext.put(RequestDurationWatcher.class, requestDurationWatcher);
-		final RetentionLogWritingWatcher retentionLogWritingWatcher = new RetentionLogWritingWatcher();
+		final RetentionLogWritingWatcher retentionLogWritingWatcher = createRetentionLogWritingWatcher();
 		parametersContext.put(RetentionLogWritingWatcher.class, retentionLogWritingWatcher);
 		final EventLogManager eventLogManager = EventLogManager.getInstance();
 		parametersContext.put(EventLogManager.class, eventLogManager);
@@ -330,6 +330,10 @@ public class RequestLogFilter implements Filter {
 		}
 
 		startServices();
+	}
+
+	protected RetentionLogWritingWatcher createRetentionLogWritingWatcher() {
+		return new RetentionLogWritingWatcher();
 	}
 
 	private void startServices() {
@@ -468,7 +472,7 @@ public class RequestLogFilter implements Filter {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T, V> void setParameter(final String parameterName, final String value) {
+	<T, V> void setParameter(final String parameterName, final String value) {
 		final ParameterHandler<T, V> parameterSetter = (ParameterHandler<T, V>) parameterHandlers.get(parameterName);
 		if (parameterSetter == null) {
 			log.warn("init-parameter "+parameterName+" is not handled. Ignoring.");

@@ -101,18 +101,22 @@ public class EventLogManager {
 //	private final Map<Class<? extends EventLogListener>, EventLogListener<?>> eventLogListeners = Maps.newHashMap();
 	private Set<?> eventLogWatchers;
 
-	private EventLogManager() {
+	protected EventLogManager() {
 	}
 
 	public static EventLogManager getInstance() {
 		if (instance == null) {
 			synchronized (EventLogManager.class) {
 				if (instance == null) {
-					instance = new EventLogManager();
+					setInstance(new EventLogManager());
 				}
 			}
 		}
 		return instance;
+	}
+	
+	protected static void setInstance(EventLogManager eventLogManager) {
+		instance = eventLogManager;
 	}
 
 	public <E extends EventLog> E addEventLog(final Class<E> eventLogClass) {
