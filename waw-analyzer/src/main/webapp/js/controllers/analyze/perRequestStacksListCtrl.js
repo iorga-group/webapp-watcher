@@ -19,13 +19,13 @@ function PerRequestStacksListCtrl($http, $scope, irajTableService, irajBreadcrum
 	/////////////////////
 	$scope.goToGroupedStacks = function(request) {
 		irajBreadcrumbsService.changePathAndPush($scope, '/analyze/groupedStacks/'+$scope.requestId+'/'+request.index);
-	}
+	};
 	
 	$scope.displayDetails = function(request) {
 		$http.get('api/analyze/perRequestStacksList/requestDetails/'+$scope.requestId+'/'+request.index).success(function(requestDetails) {
 			requestUtilsService.showRequestDetailsModal(requestDetails, $scope);
 		});
-	}
+	};
 	
 	/// Initialization ///
 	/////////////////////

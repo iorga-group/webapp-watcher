@@ -21,7 +21,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.iorga</groupId>
-			<artifactId>iraj-waw-analyzer</artifactId>
+			<artifactId>iraj</artifactId>
 			<exclusions>
 				<exclusion>
 					<groupId>com.mysema.querydsl</groupId>

@@ -3,6 +3,7 @@ bin
 .settings
 .project
 .classpath
+.extract
 test-output
 *.jsfdia
 *~
