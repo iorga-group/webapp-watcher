@@ -67,7 +67,7 @@ mvn package
 
 # Build de waw-analyzer
 cd ../waw-analyzer-parent
-mvn package "-Dwaw-analyzer.tag=$TAG" -Denv=prod
+mvn package "-Dwaw-analyzer.tag=$TAG" -Denv=prod -Pdistribution
 
 # Copie des fichiers générés
 cd ..

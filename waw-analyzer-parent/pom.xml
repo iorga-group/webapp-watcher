@@ -79,7 +79,6 @@
 
 	<modules>
 		<module>../webappwatcher-parent</module>
-		<module>../iraj-bom</module>
 		<module>../waw-analyzer</module>
 	</modules>
 
